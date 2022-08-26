@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include <cstdlib>
 
 // basic types
 
@@ -26,25 +27,31 @@ using Matrix4 = MatrixBase<T, 4>;
 
 using Matrix4f = MatrixBase<float, 4>;
 
-// C-like, basic function
+// C-like basic functions. We need to provide the size if the postfix is '_n'. For example,
+// print_vec_n(). Only give the fixed size array if the postfix is number. For example,
+// crossproduct_vec3.
 
+
+// Print the n size vector elements.
 template<typename T>
-inline void print_vec_n(T* vec, int n) {
+inline void print_vec_n(const T* vec, int n) {
     for (int i = 0; i < n; i++) {
         std::cout << vec[i] << ' ';
     }
     std::cout << '\n';
 }
 
+// Fill the n size vector.
 template<typename T>
-inline void fill_vec_n(T* vec, T val, int n) {
+inline void fill_vec_n(T* vec, T scale, int n) {
     for (int i = 0; i < n; i++) {
-        vec[i] = val;
+        vec[i] = scale;
     }
 }
 
+// Convert the n size vector to std::string.
 template<typename T>
-inline std::string vec_to_string_n(T* vec, int n) {
+inline std::string vec_to_string_n(const T* vec, int n) {
     auto out = std::ostringstream{};
     out << '(';
     for (int i = 0; i < n; i++) {
@@ -57,30 +64,35 @@ inline std::string vec_to_string_n(T* vec, int n) {
     return out.str();
 }
 
-
+// Then n size vectors addition operation, [out vec] = [left vec] + [right vec].
 template<typename T>
-inline void add_vec_n(T* lin, T* rin, T* out, int n) {
+inline void add_vec_n(const T* lin, const T* rin, T* out, int n) {
     for (int i = 0; i < n; i++) {
         out[i] = lin[i] + rin[i];
     }
 }
 
+// The n size vectors and scale addition operation, [out vec] = [left vec] + scale.
 template<typename T>
-inline void add_scale_vec_n(T* in, T* out, T scale, int n) {
+inline void add_scale_vec_n(const T* in, T* out, T scale, int n) {
     for (int i = 0; i < n; i++) {
         out[i] = in[i] + scale;
     }
 }
 
+// The n size vectors subtraction operation, [out vec] = [left vec] - [right vec].
 template<typename T>
-inline void sub_vec_n(T* lin, T* rin, T* out, int n) {
+inline void sub_vec_n(const T* lin, const T* rin, T* out, int n) {
     for (int i = 0; i < n; i++) {
         out[i] = lin[i] - rin[i];
     }
 }
 
+// The n size vectors and scale subtraction operation, 
+//     [out vec] = [left vec] - scale,      if not invert.
+//     [out vec] =      scale - [left vec], if invert.
 template<typename T>
-inline void sub_scale_vec_n(T* in, T* out, T scale, int n, bool invert) {
+inline void sub_scale_vec_n(const T* in, T* out, T scale, int n, bool invert) {
     for (int i = 0; i < n; i++) {
         T val = in[i] - scale;
         if (invert) {
@@ -90,63 +102,60 @@ inline void sub_scale_vec_n(T* in, T* out, T scale, int n, bool invert) {
     }
 }
 
+// The n size vectors multiplication operation, [out vec] = [left vec] x [right vec].
 template<typename T>
-inline void mul_vec_n(T* lin, T* rin, T* out, int n) {
+inline void mul_vec_n(const T* lin, const T* rin, T* out, int n) {
     for (int i = 0; i < n; i++) {
         out[i] = lin[i] * rin[i];
     }
 }
 
+// The n size vectors and scale multiplication operation, [out vec] = [left vec] x scale.
 template<typename T>
-inline void mul_scale_vec_n(T* in, T* out, T scale, int n) {
+inline void mul_scale_vec_n(const T* in, T* out, T scale, int n) {
     for (int i = 0; i < n; i++) {
         out[i] = scale * in[i];
     }
 }
 
+// The n size vectors division operation, [out vec] = [left vec] / [right vec].
+// This operation is not common.
 template<typename T>
-inline void div_vec_n(T* lin, T* rin, T* out, int n) {
+inline void div_vec_n(const T* lin, const T* rin, T* out, int n) {
     for (int i = 0; i < n; i++) {
         out[i] = lin[i] / rin[i];
     }
 }
 
+// The n size vectors and scale division operation, 
+//     [out vec] = [left vec] / scale,      if not invert.
+//     [out vec] =      scale / [left vec], if invert.
 template<typename T>
-inline void div_scale_vec_n(T* in, T* out, T scale, int n, bool invert) {
+inline void div_scale_vec_n(const T* in, T* out, T scale, int n, bool invert) {
     for (int i = 0; i < n; i++) {
         T val = in[i];
-        if (!invert) {
-            val = val/scale;
-        } else {
+        if (invert) {
             val = scale/val;
+        } else {
+            val = val/scale;
         }
         out[i] = val;
     }
 }
 
+// The 3-vector cross product operation.
+// wiki: https://en.wikipedia.org/wiki/Cross_product
 template<typename T>
-inline void cross_product_vec3(T* lin, T* rin, T* out) {
+inline void crossproduct_vec3(const T* lin, const T* rin, T* out) {
     out[0] = lin[1] * rin[2] - lin[2] * rin[1];
     out[1] = lin[2] * rin[0] - lin[0] * rin[2];
     out[2] = lin[0] * rin[1] - lin[1] * rin[0];
 }
 
+// The n size vector inner product operation.
+// wiki: https://en.wikipedia.org/wiki/Inner_product_space
 template<typename T>
-inline void normalize_n(T* vec, int n) {
-    double div = 0.f;
-    for (int i = 0; i < n; i++) {
-        T val = vec[i];
-        div += val * val;
-    }
-    div = std::sqrt(div);
-
-    for (int i = 0; i < n; i++) {
-        vec[i] /= div;
-    }
-}
-
-template<typename T>
-inline T dot_n(T* lin, T* rin, int n) {
+inline T innerproduct_vec_n(const T* lin, const T* rin, int n) {
     double val = 0.f;
     for (int i = 0; i < n; i++) {
         val += lin[i] * rin[i];
@@ -154,8 +163,28 @@ inline T dot_n(T* lin, T* rin, int n) {
     return val;
 }
 
+// The  n-size vector normalizing operation. It should be
+// equal to
+//     |a| = sqrt(inner product(a, a))
+//     out = a / |a|
 template<typename T>
-inline void mul_mat_n(T* lin, T* rin, T* out, int n) {
+inline void normalize_vec_n(T* vec, int n) {
+    double factor = 0.f;
+    for (int i = 0; i < n; i++) {
+        T val = vec[i];
+        factor += val*val;
+    }
+    factor = 1.f/std::sqrt(factor);
+
+    for (int i = 0; i < n; i++) {
+        vec[i] *= factor;
+    }
+}
+
+// The n*n size matrix multiplication operation
+// wiki: https://en.wikipedia.org/wiki/Matrix_multiplication
+template<typename T>
+inline void mul_mat_n(const T* lin, const T* rin, T* out, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             T sum = 0;
@@ -167,135 +196,268 @@ inline void mul_mat_n(T* lin, T* rin, T* out, int n) {
     }
 }
 
+// Fill a the diagonal elements for n*n size matrix.
 template<typename T>
-inline void fill_diagonal_n(T* mat, T val, int n) {
+inline void diagonal_mat_n(T* mat, T scale, int n) {
     for (int i = 0; i < n; i++) {
-        mat[i * n + i] = val;
+        mat[i * n + i] = scale;
     }
 }
 
+// Compute the 1*1 size matrix or 2*2 size matrix determinant value.
 template<typename T>
-inline void invert_mat_4(T* inv, T* mat4) {
-    inv[0] = mat4[5]  * mat4[10] * mat4[15] -
-             mat4[5]  * mat4[11] * mat4[14] -
-             mat4[9]  * mat4[6]  * mat4[15] +
-             mat4[9]  * mat4[7]  * mat4[14] +
-             mat4[13] * mat4[6]  * mat4[11] -
-             mat4[13] * mat4[7]  * mat4[10];
+inline T determinant_mat_low(const T* mat, int n) {
+    if (n == 1) {
+        return mat[0];
+    } else if (n == 2) {
+        T a = mat[0];
+        T b = mat[1];
+        T c = mat[n];
+        T d = mat[n+1];
+        return a*d - c*b;
+    }
+    return 0;
+}
 
-    inv[4] = -mat4[4]  * mat4[10] * mat4[15] +
-              mat4[4]  * mat4[11] * mat4[14] +
-              mat4[8]  * mat4[6]  * mat4[15] -
-              mat4[8]  * mat4[7]  * mat4[14] -
-              mat4[12] * mat4[6]  * mat4[11] +
-              mat4[12] * mat4[7]  * mat4[10];
+// Get the cofactor matrix for n*n size matrix.
+template<typename T>
+void fill_cofactor_n(const T* mat, T* cof, int p, int q, int n) {
+    int sub_cnt = 0, main_cnt = 0;
 
-    inv[8] = mat4[4]  * mat4[9]  * mat4[15] -
-             mat4[4]  * mat4[11] * mat4[13] -
-             mat4[8]  * mat4[5]  * mat4[15] +
-             mat4[8]  * mat4[7]  * mat4[13] +
-             mat4[12] * mat4[5]  * mat4[11] -
-             mat4[12] * mat4[7]  * mat4[9];
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i != p && j != q) {
+                cof[sub_cnt++] = mat[main_cnt];
+            }
+            main_cnt++;
+        }
+    }
+}
 
-    inv[12] = -mat4[4]  * mat4[9]  * mat4[14] +
-               mat4[4]  * mat4[10] * mat4[13] +
-               mat4[8]  * mat4[5]  * mat4[14] -
-               mat4[8]  * mat4[6]  * mat4[13] -
-               mat4[12] * mat4[5]  * mat4[10] +
-               mat4[12] * mat4[6]  * mat4[9];
+// Compute the n*n size matrix determinant value.
+// wiki: https://en.wikipedia.org/wiki/Determinant
+template<typename T>
+inline T determinant_mat_n(const T* mat, int n) {
+    if (n <= 2) {
+        return determinant_mat_low(mat, n);
+    }
+    T* cof = (T*)std::malloc(sizeof(T) * (n-1) * (n-1));
+    T det = 0;
 
-    inv[1] = -mat4[1]  * mat4[10] * mat4[15] +
-              mat4[1]  * mat4[11] * mat4[14] +
-              mat4[9]  * mat4[2]  * mat4[15] -
-              mat4[9]  * mat4[3]  * mat4[14] -
-              mat4[13] * mat4[2]  * mat4[11] +
-              mat4[13] * mat4[3]  * mat4[10];
+    for (int i = 0; i < n; i++) {
+        fill_cofactor_n(mat, cof, 0, i, n);
+        T val = mat[i] * determinant_mat_n(cof, n-1);
 
-    inv[5] = mat4[0]  * mat4[10] * mat4[15] -
-             mat4[0]  * mat4[11] * mat4[14] -
-             mat4[8]  * mat4[2]  * mat4[15] +
-             mat4[8]  * mat4[3]  * mat4[14] +
-             mat4[12] * mat4[2]  * mat4[11] -
-             mat4[12] * mat4[3]  * mat4[10];
+        if ((i + 0) % 2 == 1) {
+            val = -val;
+        }
+        det += val;
+    }
 
-    inv[9] = -mat4[0]  * mat4[9]  * mat4[15] +
-              mat4[0]  * mat4[11] * mat4[13] +
-              mat4[8]  * mat4[1]  * mat4[15] -
-              mat4[8]  * mat4[3]  * mat4[13] -
-              mat4[12] * mat4[1]  * mat4[11] +
-              mat4[12] * mat4[3]  * mat4[9];
+    free(cof);
+    return det;
+}
 
-    inv[13] = mat4[0]  * mat4[9]  * mat4[14] -
-              mat4[0]  * mat4[10] * mat4[13] -
-              mat4[8]  * mat4[1]  * mat4[14] +
-              mat4[8]  * mat4[2]  * mat4[13] +
-              mat4[12] * mat4[1]  * mat4[10] -
-              mat4[12] * mat4[2]  * mat4[9];
+// Compute the adjugate matrix for n*n size matrix.
+template<typename T>
+inline void adjugate_mat_n(const T* mat, T* adj, int n) {
+    T* cof = (T*)std::malloc(sizeof(T) * (n-1) * (n-1));
 
-    inv[2] = mat4[1]  * mat4[6] * mat4[15] -
-             mat4[1]  * mat4[7] * mat4[14] -
-             mat4[5]  * mat4[2] * mat4[15] +
-             mat4[5]  * mat4[3] * mat4[14] +
-             mat4[13] * mat4[2] * mat4[7] -
-             mat4[13] * mat4[3] * mat4[6];
+    if (n == 1) {
+        adj[0] = mat[0];
+    }
 
-    inv[6] = -mat4[0]  * mat4[6] * mat4[15] +
-              mat4[0]  * mat4[7] * mat4[14] +
-              mat4[4]  * mat4[2] * mat4[15] -
-              mat4[4]  * mat4[3] * mat4[14] -
-              mat4[12] * mat4[2] * mat4[7] +
-              mat4[12] * mat4[3] * mat4[6];
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            fill_cofactor_n(mat, cof, i, j, n);
+            T det = determinant_mat_n(cof, n-1); 
 
-    inv[10] = mat4[0]  * mat4[5] * mat4[15] -
-              mat4[0]  * mat4[7] * mat4[13] -
-              mat4[4]  * mat4[1] * mat4[15] +
-              mat4[4]  * mat4[3] * mat4[13] +
-              mat4[12] * mat4[1] * mat4[7] -
-              mat4[12] * mat4[3] * mat4[5];
+            if ((i + j) % 2 == 1) {
+                det = -det;
+            }
+            adj[j * n + i] = det;
+        }
+    }
 
-    inv[14] = -mat4[0]  * mat4[5] * mat4[14] +
-               mat4[0]  * mat4[6] * mat4[13] +
-               mat4[4]  * mat4[1] * mat4[14] -
-               mat4[4]  * mat4[2] * mat4[13] -
-               mat4[12] * mat4[1] * mat4[6] +
-               mat4[12] * mat4[2] * mat4[5];
+    free(cof);
+}
 
-    inv[3] = -mat4[1] * mat4[6] * mat4[11] +
-              mat4[1] * mat4[7] * mat4[10] +
-              mat4[5] * mat4[2] * mat4[11] -
-              mat4[5] * mat4[3] * mat4[10] -
-              mat4[9] * mat4[2] * mat4[7] +
-              mat4[9] * mat4[3] * mat4[6];
+// Compute the inverse of the n*n matrix.
+// wiki: https://en.wikipedia.org/wiki/Invertible_matrix
+template<typename T>
+inline void invert_mat_n(const T* mat, T* inv, int n) {
+    T* adj = (T*)std::malloc(sizeof(T) * n * n);
 
-    inv[7] = mat4[0] * mat4[6] * mat4[11] -
-             mat4[0] * mat4[7] * mat4[10] -
-             mat4[4] * mat4[2] * mat4[11] +
-             mat4[4] * mat4[3] * mat4[10] +
-             mat4[8] * mat4[2] * mat4[7] -
-             mat4[8] * mat4[3] * mat4[6];
+    adjugate_mat_n(mat, adj, n);
+    T det = determinant_mat_n(mat, n);
 
-    inv[11] = -mat4[0] * mat4[5] * mat4[11] +
-               mat4[0] * mat4[7] * mat4[9] +
-               mat4[4] * mat4[1] * mat4[11] -
-               mat4[4] * mat4[3] * mat4[9] -
-               mat4[8] * mat4[1] * mat4[7] +
-               mat4[8] * mat4[3] * mat4[5];
+    div_scale_vec_n(adj, inv, det, n*n, false);
 
-    inv[15] = mat4[0] * mat4[5] * mat4[10] -
-              mat4[0] * mat4[6] * mat4[9] -
-              mat4[4] * mat4[1] * mat4[10] +
-              mat4[4] * mat4[2] * mat4[9] +
-              mat4[8] * mat4[1] * mat4[6] -
-              mat4[8] * mat4[2] * mat4[5];
+    free(adj);
+}
 
-    double det = mat4[0] * inv[0] + mat4[1] * inv[4] + mat4[2] * inv[8] + mat4[3] * inv[12];
+// Fast compute the inverse of the 4x4 matrix.
+template<typename T>
+inline void invert_mat4(const T* mat4, T* inv4) {
+    inv4[0] = mat4[5]  * mat4[10] * mat4[15] -
+              mat4[5]  * mat4[11] * mat4[14] -
+              mat4[9]  * mat4[6]  * mat4[15] +
+              mat4[9]  * mat4[7]  * mat4[14] +
+              mat4[13] * mat4[6]  * mat4[11] -
+              mat4[13] * mat4[7]  * mat4[10];
+
+    inv4[4] = -mat4[4]  * mat4[10] * mat4[15] +
+               mat4[4]  * mat4[11] * mat4[14] +
+               mat4[8]  * mat4[6]  * mat4[15] -
+               mat4[8]  * mat4[7]  * mat4[14] -
+               mat4[12] * mat4[6]  * mat4[11] +
+               mat4[12] * mat4[7]  * mat4[10];
+
+    inv4[8] = mat4[4]  * mat4[9]  * mat4[15] -
+              mat4[4]  * mat4[11] * mat4[13] -
+              mat4[8]  * mat4[5]  * mat4[15] +
+              mat4[8]  * mat4[7]  * mat4[13] +
+              mat4[12] * mat4[5]  * mat4[11] -
+              mat4[12] * mat4[7]  * mat4[9];
+
+    inv4[12] = -mat4[4]  * mat4[9]  * mat4[14] +
+                mat4[4]  * mat4[10] * mat4[13] +
+                mat4[8]  * mat4[5]  * mat4[14] -
+                mat4[8]  * mat4[6]  * mat4[13] -
+                mat4[12] * mat4[5]  * mat4[10] +
+                mat4[12] * mat4[6]  * mat4[9];
+
+    inv4[1] = -mat4[1]  * mat4[10] * mat4[15] +
+               mat4[1]  * mat4[11] * mat4[14] +
+               mat4[9]  * mat4[2]  * mat4[15] -
+               mat4[9]  * mat4[3]  * mat4[14] -
+               mat4[13] * mat4[2]  * mat4[11] +
+               mat4[13] * mat4[3]  * mat4[10];
+
+    inv4[5] = mat4[0]  * mat4[10] * mat4[15] -
+              mat4[0]  * mat4[11] * mat4[14] -
+              mat4[8]  * mat4[2]  * mat4[15] +
+              mat4[8]  * mat4[3]  * mat4[14] +
+              mat4[12] * mat4[2]  * mat4[11] -
+              mat4[12] * mat4[3]  * mat4[10];
+
+    inv4[9] = -mat4[0]  * mat4[9]  * mat4[15] +
+               mat4[0]  * mat4[11] * mat4[13] +
+               mat4[8]  * mat4[1]  * mat4[15] -
+               mat4[8]  * mat4[3]  * mat4[13] -
+               mat4[12] * mat4[1]  * mat4[11] +
+               mat4[12] * mat4[3]  * mat4[9];
+
+    inv4[13] = mat4[0]  * mat4[9]  * mat4[14] -
+               mat4[0]  * mat4[10] * mat4[13] -
+               mat4[8]  * mat4[1]  * mat4[14] +
+               mat4[8]  * mat4[2]  * mat4[13] +
+               mat4[12] * mat4[1]  * mat4[10] -
+               mat4[12] * mat4[2]  * mat4[9];
+
+    inv4[2] = mat4[1]  * mat4[6] * mat4[15] -
+              mat4[1]  * mat4[7] * mat4[14] -
+              mat4[5]  * mat4[2] * mat4[15] +
+              mat4[5]  * mat4[3] * mat4[14] +
+              mat4[13] * mat4[2] * mat4[7] -
+              mat4[13] * mat4[3] * mat4[6];
+
+    inv4[6] = -mat4[0]  * mat4[6] * mat4[15] +
+               mat4[0]  * mat4[7] * mat4[14] +
+               mat4[4]  * mat4[2] * mat4[15] -
+               mat4[4]  * mat4[3] * mat4[14] -
+               mat4[12] * mat4[2] * mat4[7] +
+               mat4[12] * mat4[3] * mat4[6];
+
+    inv4[10] = mat4[0]  * mat4[5] * mat4[15] -
+               mat4[0]  * mat4[7] * mat4[13] -
+               mat4[4]  * mat4[1] * mat4[15] +
+               mat4[4]  * mat4[3] * mat4[13] +
+               mat4[12] * mat4[1] * mat4[7] -
+               mat4[12] * mat4[3] * mat4[5];
+
+    inv4[14] = -mat4[0]  * mat4[5] * mat4[14] +
+                mat4[0]  * mat4[6] * mat4[13] +
+                mat4[4]  * mat4[1] * mat4[14] -
+                mat4[4]  * mat4[2] * mat4[13] -
+                mat4[12] * mat4[1] * mat4[6] +
+                mat4[12] * mat4[2] * mat4[5];
+
+    inv4[3] = -mat4[1] * mat4[6] * mat4[11] +
+               mat4[1] * mat4[7] * mat4[10] +
+               mat4[5] * mat4[2] * mat4[11] -
+               mat4[5] * mat4[3] * mat4[10] -
+               mat4[9] * mat4[2] * mat4[7] +
+               mat4[9] * mat4[3] * mat4[6];
+
+    inv4[7] = mat4[0] * mat4[6] * mat4[11] -
+              mat4[0] * mat4[7] * mat4[10] -
+              mat4[4] * mat4[2] * mat4[11] +
+              mat4[4] * mat4[3] * mat4[10] +
+              mat4[8] * mat4[2] * mat4[7] -
+              mat4[8] * mat4[3] * mat4[6];
+
+    inv4[11] = -mat4[0] * mat4[5] * mat4[11] +
+                mat4[0] * mat4[7] * mat4[9] +
+                mat4[4] * mat4[1] * mat4[11] -
+                mat4[4] * mat4[3] * mat4[9] -
+                mat4[8] * mat4[1] * mat4[7] +
+                mat4[8] * mat4[3] * mat4[5];
+
+    inv4[15] = mat4[0] * mat4[5] * mat4[10] -
+               mat4[0] * mat4[6] * mat4[9] -
+               mat4[4] * mat4[1] * mat4[10] +
+               mat4[4] * mat4[2] * mat4[9] +
+               mat4[8] * mat4[1] * mat4[6] -
+               mat4[8] * mat4[2] * mat4[5];
+
+    double det = mat4[0] * inv4[0] + mat4[1] * inv4[4] + mat4[2] * inv4[8] + mat4[3] * inv4[12];
     det = 1.0f / det;
 
     for (int i = 0; i < 16; i++) {
-        inv[i] *= det;
+        inv4[i] *= det;
     }
 }
 
+// Compute the look-at matrix.
+template<typename T>
+inline void lookat_mat4(const T* eye, const T* center, const T* up, T* mat4) {
+    T* buf_x = (T*)std::malloc(sizeof(T) * 3);
+    T* buf_y = (T*)std::malloc(sizeof(T) * 3);
+    T* buf_z = (T*)std::malloc(sizeof(T) * 3);
+
+    sub_vec_n(eye, center, buf_z, 3);
+    normalize_vec_n(buf_z, 3);
+
+    crossproduct_vec3(up   , buf_z, buf_x);
+    crossproduct_vec3(buf_z, buf_x, buf_y);
+
+    normalize_vec_n(buf_x, 3);
+    normalize_vec_n(buf_y, 3);
+
+    for (int i = 0; i < 3; ++i) {
+        mat4[i * 4 + 0] = buf_x[i];
+        mat4[i * 4 + 1] = buf_y[i];
+        mat4[i * 4 + 2] = buf_z[i];
+
+        buf_x[i] = -buf_x[i];
+        buf_y[i] = -buf_y[i];
+        buf_z[i] = -buf_z[i];
+    }
+
+    mat4[3 * 4 + 0] = innerproduct_vec_n(buf_x, eye, 3);
+    mat4[3 * 4 + 1] = innerproduct_vec_n(buf_y, eye, 3);
+    mat4[3 * 4 + 2] = innerproduct_vec_n(buf_z, eye, 3);
+
+    mat4[0 * 4 + 3] = 0;
+    mat4[1 * 4 + 3] = 0;
+    mat4[2 * 4 + 3] = 0;
+    mat4[3 * 4 + 3] = 1.f;
+
+    free(buf_x);
+    free(buf_y);
+    free(buf_z);
+}
 
 template<typename T, size_t N>
 inline T* get_vec_ptr(VectorBase<T, N> &vec) {
@@ -337,6 +499,8 @@ inline std::string ToString(MatrixBase<T, N> mat) {
     out << '}';
     return out.str();
 }
+
+/*
 
 // operators for vector
 
@@ -413,14 +577,14 @@ inline VectorBase<T, N> operator* (T scale, VectorBase<T, N> a) {
 }
 
 template<typename T, size_t N>
-inline VectorBase<T, N> operator/ (VectorBase<T, N> a, VectorBase<T, N> &b) {
-    div_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N); // cover the a array
+inline VectorBase<T, N> operator/ (VectorBase<T, N> a, T scale) {
+    div_scale_vec_n(GetPtr(a), GetPtr(a), scale, N, false); // cover the a array
     return a;
 }
 
 template<typename T, size_t N>
-inline VectorBase<T, N> operator/ (VectorBase<T, N> a, T scale) {
-    div_scale_vec_n(GetPtr(a), GetPtr(a), scale, N, false); // cover the a array
+inline VectorBase<T, N> operator/ (T scale, VectorBase<T, N> a) {
+    div_scale_vec_n(GetPtr(a), GetPtr(a), scale, N, true); // cover the a array
     return a;
 }
 
@@ -528,79 +692,46 @@ inline void FillScale(MatrixBase<T, N> &mat, T scale) {
 template<typename T, size_t N>
 inline void FillDiagonal(MatrixBase<T, N> &mat, T scale) {
     fill_vec_n(GetPtr(mat), (T)0, N*N);
-    fill_diagonal_n(GetPtr(mat), scale, N);
+    diagonal_mat_n(GetPtr(mat), scale, N);
 }
 
 template<typename T, size_t N>
 inline void Normalize(VectorBase<T, N> &vec) {
-    normalize_n(GetPtr(vec), N);
+    normalize_vec_n(GetPtr(vec), N);
 }
 
 template<typename T, size_t N>
 inline T Dot(VectorBase<T, N> &a, VectorBase<T, N> &b) {
-    return dot_n(GetPtr(a), GetPtr(b), N);
+    return innerproduct_vec_n(GetPtr(a), GetPtr(b), N);
+}
+
+template<typename T, size_t N>
+inline T InnerProduct(VectorBase<T, N> &a, VectorBase<T, N> &b) {
+    return innerproduct_vec_n(GetPtr(a), GetPtr(b), N);
 }
 
 template<typename T>
 inline Vector3<T> CrossProduct(Vector3<T> &a, Vector3<T> &b) {
     Vector3<T> out;
-    cross_product_vec3(GetPtr(a), GetPtr(b), GetPtr(out));
+    crossproduct_vec3(GetPtr(a), GetPtr(b), GetPtr(out));
     return out;
 }
 
 template<typename T>
 inline Matrix4<T> InvertMat4(Matrix4<T> mat4) {
     Matrix4<T> inv;
-    invert_mat_4(GetPtr(inv), GetPtr(mat4));
+    invert_mat4(GetPtr(mat4), GetPtr(inv));
     return inv;
 }
 
 template<typename T>
 inline Matrix4<T> LookAt(Vector3<T> &eye, Vector3<T> &center, Vector3<T> &up) {
     Matrix4<T> Matrix;
-    Vector3<T> X, Y, Z;
-
-    Z = eye - center;
-    Normalize(Z);
-
-    Y = up;
-    X = CrossProduct(Y, Z);
-    Y = CrossProduct(Z, X);
-
-    Normalize(X);
-    Normalize(Y);
-
-    // x
-    Matrix[0][0] = X[0];
-    Matrix[1][0] = X[1];
-    Matrix[2][0] = X[2];
-
-    X = -X;
-    Matrix[3][0] = Dot(X, eye);
-
-    // y
-    Matrix[0][1] = Y[0];
-    Matrix[1][1] = Y[1];
-    Matrix[2][1] = Y[2];
-
-    Y = -Y;
-    Matrix[3][1] = Dot(Y, eye);
-
-    // z
-    Matrix[0][2] = Z[0];
-    Matrix[1][2] = Z[1];
-    Matrix[2][2] = Z[2];
-
-    Z = -Z;
-    Matrix[3][2] = Dot(Z, eye);
-
-    // others
-    Matrix[0][3] = 0;
-    Matrix[1][3] = 0;
-    Matrix[2][3] = 0;
-    Matrix[3][3] = 1.0f;
+    
+    lookat_mat4(GetPtr(eye), GetPtr(center), GetPtr(up), GetPtr(Matrix));
 
     return Matrix;
 }
+*/
 
 #endif
