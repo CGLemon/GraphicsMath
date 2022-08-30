@@ -7,6 +7,9 @@
 #include <cmath>
 #include <cstdlib>
 
+static constexpr double D_PI = 3.141592653589793238462643383279502884197f;
+static constexpr float  F_PI = 3.141592653589793238462643383279502884197f;
+
 // basic types
 
 template<typename T, size_t N>
@@ -30,7 +33,6 @@ using Matrix4f = MatrixBase<float, 4>;
 // C-like basic functions. We need to provide the size if the postfix is '_n'. For example,
 // print_vec_n(). Only give the fixed size array if the postfix is number. For example,
 // crossproduct_vec3.
-
 
 // Print the n size vector elements.
 template<typename T>
@@ -196,11 +198,52 @@ inline void mul_mat_n(const T* lin, const T* rin, T* out, int n) {
     }
 }
 
-// Fill a the diagonal elements for n*n size matrix.
+// Fill the diagonal elements for n*n size matrix.
 template<typename T>
 inline void diagonal_mat_n(T* mat, T scale, int n) {
     for (int i = 0; i < n; i++) {
         mat[i * n + i] = scale;
+    }
+}
+
+// Fill the identity n*n size matrix.
+template<typename T>
+inline void identity_mat_n(T* mat, int n) {
+    diagonal_mat_n(mat, 1.0f, n);
+}
+
+template<typename T>
+inline void translation_mat4(T* mat4, const T *vec3) {
+    diagonal_mat_n(mat4, 1.0f, 4); // identity
+    mat4[0 * 4 + 3] = vec3[0]; // x
+    mat4[1 * 4 + 3] = vec3[1]; // y
+    mat4[2 * 4 + 3] = vec3[2]; // z
+}
+
+template<typename T>
+inline void rotation_mat4(T* mat4, const T *vec3, double degree) {
+    const double radius = degree * (D_PI / 180.f);
+    const double cos_v = std::cos(radius);
+    const double sin_v = std::sin(radius);
+
+    diagonal_mat_n(mat4, 1.0f, 4);
+
+    if (std::abs(vec3[0] - 0.f) > 1e-8f) {
+        // x-axis is not zero.
+        mat4[1 * 4 + 1] =  cos_v; mat4[1 * 4 + 2] = sin_v;
+        mat4[2 * 4 + 1] = -sin_v; mat4[2 * 4 + 2] = cos_v;
+    }
+
+    if (std::abs(vec3[1] - 0.f) > 1e-8f) {
+        // y-axis is not zero.
+        mat4[0 * 4 + 0] = cos_v; mat4[0 * 4 + 2] = -sin_v;
+        mat4[2 * 4 + 0] = sin_v; mat4[2 * 4 + 2] =  cos_v;
+    }
+
+    if (std::abs(vec3[2] - 0.f) > 1e-8f) {
+        // z-axis is not zero.
+        mat4[0 * 4 + 0] = cos_v; mat4[0 * 4 + 1] = -sin_v;
+        mat4[1 * 4 + 0] = sin_v; mat4[1 * 4 + 1] =  cos_v;
     }
 }
 
