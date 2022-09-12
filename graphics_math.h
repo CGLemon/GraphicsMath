@@ -6,6 +6,7 @@
 #include <sstream>
 #include <cmath>
 #include <cstdlib>
+#include <type_traits>
 
 static constexpr double D_PI = 3.141592653589793238462643383279502884197f;
 static constexpr float  F_PI = 3.141592653589793238462643383279502884197f;
@@ -22,326 +23,276 @@ using MatrixBase = std::array<std::array<T, N>, N>;
 
 template<typename T>
 using Vector3 = VectorBase<T, 3>;
-
-using Vector3f = VectorBase<float, 3>;
+using Vector3f = Vector3<float>;
+using Vector3d = Vector3<double>;
 
 template<typename T>
 using Matrix4 = MatrixBase<T, 4>;
+using Matrix4f = Matrix4<float>;
+using Matrix4d = Matrix4<double>;
 
-using Matrix4f = MatrixBase<float, 4>;
 
-// C-like basic functions. We need to provide the size if the postfix is '_n'. For example,
-// print_vec_n(). Only give the fixed size array if the postfix is number. For example,
-// crossproduct_vec3.
+#define STATIC_ASSERT_TYPE(T)                                  \
+static_assert(std::is_same<T, float>::value ||                 \
+                  std::is_same<T, double>::value,              \
+                  "Only support the float and double type.");
 
-// Print the n size vector elements.
+#define VEC3_X_DIM (0)
+#define VEC3_Y_DIM (1)
+#define VEC3_Z_DIM (2)
+#define SCALE_TYPE const double
+
+// C-like functions.
+
 template<typename T>
-inline void print_vec_n(const T* vec, int n) {
-    for (int i = 0; i < n; i++) {
-        std::cout << vec[i] << ' ';
-    }
-    std::cout << '\n';
+inline T GetX(const T* vec) {
+    STATIC_ASSERT_TYPE(T);
+    return vec[VEC3_X_DIM];
+}
+template<typename T>
+inline T GetY(const T* vec) {
+    STATIC_ASSERT_TYPE(T);
+    return vec[VEC3_Y_DIM];
 }
 
-// Fill the n size vector.
 template<typename T>
-inline void fill_vec_n(T* vec, T scale, int n) {
-    for (int i = 0; i < n; i++) {
-        vec[i] = scale;
-    }
+inline T GetZ(const T* vec) {
+    STATIC_ASSERT_TYPE(T);
+    return vec[VEC3_Z_DIM];
 }
 
-// Convert the n size vector to std::string.
+// Convert the vector3 to std::string.
 template<typename T>
-inline std::string vec_to_string_n(const T* vec, int n) {
+inline std::string Vec3ToString(const T* vec3) {
+    STATIC_ASSERT_TYPE(T);
+
     auto out = std::ostringstream{};
-    out << '(';
-    for (int i = 0; i < n; i++) {
-        out << vec[i];
-        if (i != n-1) {
-            out << ", ";
-        }
-    }
-    out << ')';
+    std::cout
+        << '('
+        << GetX(vec3) << ", "
+        << GetY(vec3) << ", "
+        << GetZ(vec3) << ")";
     return out.str();
 }
 
-// Then n size vectors addition operation, [out vec] = [left vec] + [right vec].
+// Print the vector3 elements.
 template<typename T>
-inline void add_vec_n(const T* lin, const T* rin, T* out, int n) {
-    for (int i = 0; i < n; i++) {
-        out[i] = lin[i] + rin[i];
+inline void PrintVec3(const T* vec3) {
+    STATIC_ASSERT_TYPE(T);
+
+    std::cout << Vec3ToString(vec3) << std::endl;
+}
+
+// Fill the vector3.
+template<typename T>
+inline void FillVec3(T* vec3, SCALE_TYPE scale) {
+    STATIC_ASSERT_TYPE(T);
+
+    vec3[VEC3_X_DIM] =
+        vec3[VEC3_Y_DIM] =
+        vec3[VEC3_Z_DIM] =
+        scale;
+}
+
+// The vector3 addition operation, [out vec] = [left vec] + [right vec].
+template<typename T>
+inline void AddVec3(const T* lhs, const T* rhs, T* out) {
+    STATIC_ASSERT_TYPE(T);
+
+    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] + rhs[VEC3_X_DIM];
+    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] + rhs[VEC3_Y_DIM];
+    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] + rhs[VEC3_Z_DIM];
+}
+
+// The vector3 and scale addition operation, [out vec] = [in vec] + scale.
+template<typename T>
+inline void AddVec3(const T* in, T* out, SCALE_TYPE scale) {
+    STATIC_ASSERT_TYPE(T);
+
+    out[VEC3_X_DIM] = in[VEC3_X_DIM] + scale;
+    out[VEC3_Y_DIM] = in[VEC3_Y_DIM] + scale;
+    out[VEC3_Z_DIM] = in[VEC3_Z_DIM] + scale;
+}
+
+// The vector3 subtraction operation, [out vec] = [left vec] - [right vec].
+template<typename T>
+inline void SubVec3(const T* lhs, const T* rhs, T* out) {
+    STATIC_ASSERT_TYPE(T);
+
+    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] - rhs[VEC3_X_DIM];
+    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] - rhs[VEC3_Y_DIM];
+    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] - rhs[VEC3_Z_DIM];
+}
+
+// The vector3 and scale subtraction operation, 
+//     [out vec] = [in vec] - scale,    if not invert.
+//     [out vec] =    scale - [in vec], if invert.
+template<typename T>
+inline void SubVec3(const T* in, T* out, SCALE_TYPE scale, bool invert) {
+    STATIC_ASSERT_TYPE(T);
+
+    if (!invert) {
+        out[VEC3_X_DIM] = in[VEC3_X_DIM] - scale;
+        out[VEC3_Y_DIM] = in[VEC3_Y_DIM] - scale;
+        out[VEC3_Z_DIM] = in[VEC3_Z_DIM] - scale;
+    } else {
+        out[VEC3_X_DIM] = scale - in[VEC3_X_DIM];
+        out[VEC3_Y_DIM] = scale - in[VEC3_Y_DIM];
+        out[VEC3_Z_DIM] = scale - in[VEC3_Z_DIM];
     }
 }
 
-// The n size vectors and scale addition operation, [out vec] = [left vec] + scale.
+// The vector3 multiplication operation, [out vec] = [left vec] x [right vec].
 template<typename T>
-inline void add_scale_vec_n(const T* in, T* out, T scale, int n) {
-    for (int i = 0; i < n; i++) {
-        out[i] = in[i] + scale;
-    }
+inline void MulVec3(const T* lhs, const T* rhs, T* out) {
+    STATIC_ASSERT_TYPE(T);
+
+    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] * rhs[VEC3_X_DIM];
+    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] * rhs[VEC3_Y_DIM];
+    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] * rhs[VEC3_Z_DIM];
 }
 
-// The n size vectors subtraction operation, [out vec] = [left vec] - [right vec].
+// The vector3 multiplication operation, [out vec] = [in vec] x scale.
 template<typename T>
-inline void sub_vec_n(const T* lin, const T* rin, T* out, int n) {
-    for (int i = 0; i < n; i++) {
-        out[i] = lin[i] - rin[i];
-    }
+inline void MulVec3(const T* in, T* out, SCALE_TYPE scale) {
+    STATIC_ASSERT_TYPE(T);
+
+    out[VEC3_X_DIM] = in[VEC3_X_DIM] * scale;
+    out[VEC3_Y_DIM] = in[VEC3_Y_DIM] * scale;
+    out[VEC3_Z_DIM] = in[VEC3_Z_DIM] * scale;
 }
 
-// The n size vectors and scale subtraction operation, 
-//     [out vec] = [left vec] - scale,      if not invert.
-//     [out vec] =      scale - [left vec], if invert.
-template<typename T>
-inline void sub_scale_vec_n(const T* in, T* out, T scale, int n, bool invert) {
-    for (int i = 0; i < n; i++) {
-        T val = in[i] - scale;
-        if (invert) {
-            val = -val;
-        }
-        out[i] = val;
-    }
-}
-
-// The n size vectors multiplication operation, [out vec] = [left vec] x [right vec].
-template<typename T>
-inline void mul_vec_n(const T* lin, const T* rin, T* out, int n) {
-    for (int i = 0; i < n; i++) {
-        out[i] = lin[i] * rin[i];
-    }
-}
-
-// The n size vectors and scale multiplication operation, [out vec] = [left vec] x scale.
-template<typename T>
-inline void mul_scale_vec_n(const T* in, T* out, T scale, int n) {
-    for (int i = 0; i < n; i++) {
-        out[i] = scale * in[i];
-    }
-}
-
-// The n size vectors division operation, [out vec] = [left vec] / [right vec].
+// The vector3 division operation, [out vec] = [left vec] / [right vec].
 // This operation is not common.
 template<typename T>
-inline void div_vec_n(const T* lin, const T* rin, T* out, int n) {
-    for (int i = 0; i < n; i++) {
-        out[i] = lin[i] / rin[i];
-    }
+inline void DivVec3(const T* lhs, const T* rhs, T* out) {
+    STATIC_ASSERT_TYPE(T);
+
+    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] / rhs[VEC3_X_DIM];
+    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] / rhs[VEC3_Y_DIM];
+    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] / rhs[VEC3_Z_DIM];
 }
 
-// The n size vectors and scale division operation, 
-//     [out vec] = [left vec] / scale,      if not invert.
-//     [out vec] =      scale / [left vec], if invert.
+// The vector3 and scale division operation, 
+//     [out vec] = [in vec] / scale,    if not invert.
+//     [out vec] =    scale / [in vec], if invert.
 template<typename T>
-inline void div_scale_vec_n(const T* in, T* out, T scale, int n, bool invert) {
-    for (int i = 0; i < n; i++) {
-        T val = in[i];
-        if (invert) {
-            val = scale/val;
-        } else {
-            val = val/scale;
-        }
-        out[i] = val;
+inline void DivVec3(const T* in, T* out, SCALE_TYPE scale, bool invert) {
+    STATIC_ASSERT_TYPE(T);
+
+    if (!invert) {
+        out[VEC3_X_DIM] = in[VEC3_X_DIM] / scale;
+        out[VEC3_Y_DIM] = in[VEC3_Y_DIM] / scale;
+        out[VEC3_Z_DIM] = in[VEC3_Z_DIM] / scale;
+    } else {
+        out[VEC3_X_DIM] = scale / in[VEC3_X_DIM];
+        out[VEC3_Y_DIM] = scale / in[VEC3_Y_DIM];
+        out[VEC3_Z_DIM] = scale / in[VEC3_Z_DIM];
     }
 }
 
-// The 3-vector cross product operation.
+// The vector3 cross product operation.
 // wiki: https://en.wikipedia.org/wiki/Cross_product
 template<typename T>
-inline void crossproduct_vec3(const T* lin, const T* rin, T* out) {
-    out[0] = lin[1] * rin[2] - lin[2] * rin[1];
-    out[1] = lin[2] * rin[0] - lin[0] * rin[2];
-    out[2] = lin[0] * rin[1] - lin[1] * rin[0];
+inline void CrossproductVec3(const T* lhs, const T* rhs, T* out) {
+    STATIC_ASSERT_TYPE(T);
+
+    out[VEC3_X_DIM] = lhs[VEC3_Y_DIM] * rhs[VEC3_Z_DIM] - lhs[VEC3_Z_DIM] * rhs[VEC3_Y_DIM];
+    out[VEC3_Y_DIM] = lhs[VEC3_Z_DIM] * rhs[VEC3_X_DIM] - lhs[VEC3_X_DIM] * rhs[VEC3_Z_DIM];
+    out[VEC3_Z_DIM] = lhs[VEC3_X_DIM] * rhs[VEC3_Y_DIM] - lhs[VEC3_Y_DIM] * rhs[VEC3_X_DIM];
 }
 
-// The n size vector inner product operation.
+// The vector3 inner product operation.
 // wiki: https://en.wikipedia.org/wiki/Inner_product_space
 template<typename T>
-inline T innerproduct_vec_n(const T* lin, const T* rin, int n) {
+inline T InnerproductVec3(const T* lhs, const T* rhs) {
+    STATIC_ASSERT_TYPE(T);
+
     double val = 0.f;
-    for (int i = 0; i < n; i++) {
-        val += lin[i] * rin[i];
-    }
+    val += lhs[VEC3_X_DIM] * rhs[VEC3_X_DIM];
+    val += lhs[VEC3_Y_DIM] * rhs[VEC3_Y_DIM];
+    val += lhs[VEC3_Z_DIM] * rhs[VEC3_Z_DIM];
     return val;
 }
 
-// The  n-size vector normalizing operation. It should be
+// The vector3 normalizing operation. It should be
 // equal to
 //     |a| = sqrt(inner product(a, a))
 //     out = a / |a|
 template<typename T>
-inline void normalize_vec_n(T* vec, int n) {
-    double factor = 0.f;
-    for (int i = 0; i < n; i++) {
-        T val = vec[i];
-        factor += val*val;
-    }
-    factor = 1.f/std::sqrt(factor);
+inline void NormalizingVec3(const T* in, T* out) {
+    STATIC_ASSERT_TYPE(T);
 
-    for (int i = 0; i < n; i++) {
-        vec[i] *= factor;
-    }
+    double scale = 1.f/std::sqrt(InnerproductVec3(in, in));
+    out[VEC3_X_DIM] *= scale;
+    out[VEC3_Y_DIM] *= scale;
+    out[VEC3_Z_DIM] *= scale;
 }
 
-// The n*n size matrix multiplication operation
+// The matrix4 multiplication operation
 // wiki: https://en.wikipedia.org/wiki/Matrix_multiplication
 template<typename T>
-inline void mul_mat_n(const T* lin, const T* rin, T* out, int n) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            T sum = 0;
-            for (int k = 0; k < n; k++) {
-                sum += lin[i * n + k] * rin[k * n + j];
+inline void MulMat4(const T* lhs, const T* rhs, T* out) {
+    STATIC_ASSERT_TYPE(T);
+    constexpr int N = 4;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            double sum = 0.f;
+
+            // TODO: loop unrolling
+            for (int k = 0; k < N; k++) {
+                sum += lhs[i * N + k] * rhs[k * N + j];
             }
-            out[i * n + j] = sum;
+            out[i * N + j] = sum;
         }
     }
 }
 
-// Fill the diagonal elements for n*n size matrix.
+// Fill the diagonal elements for matrix4.
 template<typename T>
-inline void diagonal_mat_n(T* mat, T scale, int n) {
-    for (int i = 0; i < n; i++) {
-        mat[i * n + i] = scale;
+inline void FillDiagonalMat4(T* mat4, T scale) {
+    STATIC_ASSERT_TYPE(T);
+    constexpr int N = 4;
+
+    // TODO: loop unrolling
+    for (int i = 0; i < N; i++) {
+        mat4[i * N + i] = scale;
     }
 }
 
-// Fill the identity n*n size matrix.
+// Fill the identity matrix4.
 template<typename T>
-inline void identity_mat_n(T* mat, int n) {
-    diagonal_mat_n(mat, 1.0f, n);
+inline void FillIdentityMat4(T* mat4) {
+    STATIC_ASSERT_TYPE(T);
+    constexpr int N = 4;
+
+    // TODO: loop unrolling
+    for (int i = 0; i < N*N; ++i) {
+        mat4[i] = 0.f;
+    }
+
+    FillDiagonalMat4(mat4, 1.0f);
 }
 
 template<typename T>
-inline void translation_mat4(T* mat4, const T *vec3) {
-    diagonal_mat_n(mat4, 1.0f, 4); // identity
-    mat4[0 * 4 + 3] = vec3[0]; // x
-    mat4[1 * 4 + 3] = vec3[1]; // y
-    mat4[2 * 4 + 3] = vec3[2]; // z
-}
+inline void TranslationMat4(T* mat4, const T *vec3) {
+    STATIC_ASSERT_TYPE(T);
+    constexpr int N = 4;
 
-template<typename T>
-inline void rotation_mat4(T* mat4, const T *vec3, double degree) {
-    const double radius = degree * (D_PI / 180.f);
-    const double cos_v = std::cos(radius);
-    const double sin_v = std::sin(radius);
+    FillIdentityMat4(mat4);
 
-    diagonal_mat_n(mat4, 1.0f, 4);
-
-    if (std::abs(vec3[0] - 0.f) > 1e-8f) {
-        // x-axis is not zero.
-        mat4[1 * 4 + 1] =  cos_v; mat4[1 * 4 + 2] = sin_v;
-        mat4[2 * 4 + 1] = -sin_v; mat4[2 * 4 + 2] = cos_v;
-    }
-
-    if (std::abs(vec3[1] - 0.f) > 1e-8f) {
-        // y-axis is not zero.
-        mat4[0 * 4 + 0] = cos_v; mat4[0 * 4 + 2] = -sin_v;
-        mat4[2 * 4 + 0] = sin_v; mat4[2 * 4 + 2] =  cos_v;
-    }
-
-    if (std::abs(vec3[2] - 0.f) > 1e-8f) {
-        // z-axis is not zero.
-        mat4[0 * 4 + 0] = cos_v; mat4[0 * 4 + 1] = -sin_v;
-        mat4[1 * 4 + 0] = sin_v; mat4[1 * 4 + 1] =  cos_v;
-    }
-}
-
-// Compute the 1*1 size matrix or 2*2 size matrix determinant value.
-template<typename T>
-inline T determinant_mat_low(const T* mat, int n) {
-    if (n == 1) {
-        return mat[0];
-    } else if (n == 2) {
-        T a = mat[0];
-        T b = mat[1];
-        T c = mat[n];
-        T d = mat[n+1];
-        return a*d - c*b;
-    }
-    return 0;
-}
-
-// Get the cofactor matrix for n*n size matrix.
-template<typename T>
-void fill_cofactor_n(const T* mat, T* cof, int p, int q, int n) {
-    int sub_cnt = 0, main_cnt = 0;
-
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            if (i != p && j != q) {
-                cof[sub_cnt++] = mat[main_cnt];
-            }
-            main_cnt++;
-        }
-    }
-}
-
-// Compute the n*n size matrix determinant value.
-// wiki: https://en.wikipedia.org/wiki/Determinant
-template<typename T>
-inline T determinant_mat_n(const T* mat, int n) {
-    if (n <= 2) {
-        return determinant_mat_low(mat, n);
-    }
-    T* cof = (T*)std::malloc(sizeof(T) * (n-1) * (n-1));
-    T det = 0;
-
-    for (int i = 0; i < n; i++) {
-        fill_cofactor_n(mat, cof, 0, i, n);
-        T val = mat[i] * determinant_mat_n(cof, n-1);
-
-        if ((i + 0) % 2 == 1) {
-            val = -val;
-        }
-        det += val;
-    }
-
-    free(cof);
-    return det;
-}
-
-// Compute the adjugate matrix for n*n size matrix.
-template<typename T>
-inline void adjugate_mat_n(const T* mat, T* adj, int n) {
-    T* cof = (T*)std::malloc(sizeof(T) * (n-1) * (n-1));
-
-    if (n == 1) {
-        adj[0] = mat[0];
-    }
-
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            fill_cofactor_n(mat, cof, i, j, n);
-            T det = determinant_mat_n(cof, n-1); 
-
-            if ((i + j) % 2 == 1) {
-                det = -det;
-            }
-            adj[j * n + i] = det;
-        }
-    }
-
-    free(cof);
-}
-
-// Compute the inverse of the n*n matrix.
-// wiki: https://en.wikipedia.org/wiki/Invertible_matrix
-template<typename T>
-inline void invert_mat_n(const T* mat, T* inv, int n) {
-    T* adj = (T*)std::malloc(sizeof(T) * n * n);
-
-    adjugate_mat_n(mat, adj, n);
-    T det = determinant_mat_n(mat, n);
-
-    div_scale_vec_n(adj, inv, det, n*n, false);
-
-    free(adj);
+    // TODO: loop unrolling
+    mat4[VEC3_X_DIM * N + 3] = vec3[VEC3_X_DIM];
+    mat4[VEC3_Y_DIM * N + 3] = vec3[VEC3_Y_DIM];
+    mat4[VEC3_Z_DIM * N + 3] = vec3[VEC3_Z_DIM];
 }
 
 // Fast compute the inverse of the 4x4 matrix.
 template<typename T>
-inline void invert_mat4(const T* mat4, T* inv4) {
+inline void InvertMat4(const T* mat4, T* inv4) {
+    STATIC_ASSERT_TYPE(T);
+
     inv4[0] = mat4[5]  * mat4[10] * mat4[15] -
               mat4[5]  * mat4[11] * mat4[14] -
               mat4[9]  * mat4[6]  * mat4[15] +
@@ -464,20 +415,24 @@ inline void invert_mat4(const T* mat4, T* inv4) {
 
 // Compute the look-at matrix.
 template<typename T>
-inline void lookat_mat4(const T* eye, const T* center, const T* up, T* mat4) {
-    T* buf_x = (T*)std::malloc(sizeof(T) * 3);
-    T* buf_y = (T*)std::malloc(sizeof(T) * 3);
-    T* buf_z = (T*)std::malloc(sizeof(T) * 3);
+inline void LookatMat4(const T* eye, const T* center, const T* up, T* mat4) {
+    STATIC_ASSERT_TYPE(T);
 
-    sub_vec_n(eye, center, buf_z, 3);
-    normalize_vec_n(buf_z, 3);
+    T* main_buf = (T*)std::malloc(sizeof(T) * 3 * 3);
+    T* buf_x = main_buf + 0;
+    T* buf_y = main_buf + 3;
+    T* buf_z = main_buf + 6;
 
-    crossproduct_vec3(up   , buf_z, buf_x);
-    crossproduct_vec3(buf_z, buf_x, buf_y);
+    SubVec3(eye, center, buf_z);   // buf_z = eye - center
+    NormalizingVec3(buf_z, buf_z); // buf_z = norm(buf_z)
 
-    normalize_vec_n(buf_x, 3);
-    normalize_vec_n(buf_y, 3);
+    CrossproductVec3(up,    buf_z, buf_x); // buf_x = cross(up,    buf_z)
+    CrossproductVec3(buf_z, buf_x, buf_y); // buf_y = cross(buf_z, buf_x)
 
+    NormalizingVec3(buf_x, buf_x); // buf_x = norm(buf_x)
+    NormalizingVec3(buf_y, buf_y); // buf_y = norm(buf_y)
+
+    // TODO: loop unrolling
     for (int i = 0; i < 3; ++i) {
         mat4[i * 4 + 0] = buf_x[i];
         mat4[i * 4 + 1] = buf_y[i];
@@ -488,44 +443,32 @@ inline void lookat_mat4(const T* eye, const T* center, const T* up, T* mat4) {
         buf_z[i] = -buf_z[i];
     }
 
-    mat4[3 * 4 + 0] = innerproduct_vec_n(buf_x, eye, 3);
-    mat4[3 * 4 + 1] = innerproduct_vec_n(buf_y, eye, 3);
-    mat4[3 * 4 + 2] = innerproduct_vec_n(buf_z, eye, 3);
+    mat4[3 * 4 + 0] = InnerproductVec3(buf_x, eye);
+    mat4[3 * 4 + 1] = InnerproductVec3(buf_y, eye);
+    mat4[3 * 4 + 2] = InnerproductVec3(buf_z, eye);
 
     mat4[0 * 4 + 3] = 0;
     mat4[1 * 4 + 3] = 0;
     mat4[2 * 4 + 3] = 0;
     mat4[3 * 4 + 3] = 1.f;
 
-    free(buf_x);
-    free(buf_y);
-    free(buf_z);
-}
-
-template<typename T, size_t N>
-inline T* get_vec_ptr(VectorBase<T, N> &vec) {
-    return vec.data();
-}
-
-template<typename T, size_t N>
-inline T* get_mat_ptr(MatrixBase<T, N> &mat) {
-    return mat.at(0).data();
+    free(main_buf);
 }
 
 template<typename T, size_t N>
 inline T* GetPtr(VectorBase<T, N> &vec) {
-    return get_vec_ptr(vec);
+    return vec.data();
 }
 
 template<typename T, size_t N>
 inline T* GetPtr(MatrixBase<T, N> &mat) {
-    return get_mat_ptr(mat);
+    return mat.at(0).data();
 }
 
 template<typename T, size_t N>
 inline std::string ToString(VectorBase<T, N> vec) {
     auto out = std::ostringstream{};
-    out << vec_to_string_n(GetPtr(vec), N);
+    out << Vec3ToString(GetPtr(vec), N);
     return out.str();
 }
 
@@ -534,7 +477,7 @@ inline std::string ToString(MatrixBase<T, N> mat) {
     auto out = std::ostringstream{};
     out << '{';
     for (int i = 0; i < N; i++) {
-        out << vec_to_string_n(GetPtr(mat)+i*N, N);
+        out << Vec3ToString(GetPtr(mat)+i*N, N);
         if (i != N-1) {
             out << ", ";
         }
@@ -543,238 +486,10 @@ inline std::string ToString(MatrixBase<T, N> mat) {
     return out.str();
 }
 
-/*
-
-// operators for vector
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator+ (VectorBase<T, N> a, VectorBase<T, N> &b) {
-    add_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator+ (VectorBase<T, N> a, T scale) {
-    add_scale_vec_n(GetPtr(a), GetPtr(a), scale, N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator+ (T scale, VectorBase<T, N> a) {
-    add_scale_vec_n(GetPtr(a), GetPtr(a), scale, N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator+= (VectorBase<T, N> &a, VectorBase<T, N> &b) {
-    add_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator+= (VectorBase<T, N> &a, T scale) {
-    add_scale_vec_n(GetPtr(a), GetPtr(a), scale, N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator- (VectorBase<T, N> a, VectorBase<T, N> &b) {
-    sub_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator- (VectorBase<T, N> a, T scale) {
-    sub_scale_vec_n(GetPtr(a), GetPtr(a), scale, N, false); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator-= (VectorBase<T, N> &a, VectorBase<T, N> &b) {
-    sub_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator-= (VectorBase<T, N> &a, T scale) {
-    sub_scale_vec_n(GetPtr(a), GetPtr(a), scale, N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator* (VectorBase<T, N> a, VectorBase<T, N> &b) {
-    mul_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator* (VectorBase<T, N> a, T scale) {
-    mul_scale_vec_n(GetPtr(a), GetPtr(a), scale, N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator* (T scale, VectorBase<T, N> a) {
-    mul_scale_vec_n(GetPtr(a), GetPtr(a), scale, N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator/ (VectorBase<T, N> a, T scale) {
-    div_scale_vec_n(GetPtr(a), GetPtr(a), scale, N, false); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator/ (T scale, VectorBase<T, N> a) {
-    div_scale_vec_n(GetPtr(a), GetPtr(a), scale, N, true); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline VectorBase<T, N> operator- (VectorBase<T, N> a) {
-    T scale = -1;
-    mul_scale_vec_n(GetPtr(a), GetPtr(a), scale, N); // cover the a array
-    return a;
-}
-
-// operators for matrix
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator+ (MatrixBase<T, N> a, MatrixBase<T, N> &b) {
-    add_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator+ (MatrixBase<T, N> a, T scale) {
-    add_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator+ (T scale, MatrixBase<T, N> a) {
-    add_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator+= (MatrixBase<T, N> &a, MatrixBase<T, N> &b) {
-    add_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator+= (MatrixBase<T, N> &a, T scale) {
-    add_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator- (MatrixBase<T, N> a, MatrixBase<T, N> &b) {
-    sub_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator- (MatrixBase<T, N> a, T scale) {
-    sub_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N, false); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator-= (MatrixBase<T, N> &a, MatrixBase<T, N> &b) {
-    sub_vec_n(GetPtr(a), GetPtr(b), GetPtr(a), N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator-= (MatrixBase<T, N> &a, T scale) {
-    sub_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N, false); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator* (MatrixBase<T, N> &a, MatrixBase<T, N> &b) {
-    MatrixBase<T, N> out;
-    mul_mat_n(GetPtr(a), GetPtr(b), GetPtr(out), N);
-    return out;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator* (MatrixBase<T, N> a, T scale) {
-    mul_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator* (T scale, MatrixBase<T, N> a) {
-    mul_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N); // cover the a array
-    return a;
-}
-
-template<typename T, size_t N>
-inline MatrixBase<T, N> operator- (MatrixBase<T, N> a) {
-    T scale = -1;
-    mul_scale_vec_n(GetPtr(a), GetPtr(a), scale, N*N); // cover the a array
-    return a;
-}
-
-// for graphic math
-
-template<typename T, size_t N>
-inline void FillScale(VectorBase<T, N> &vec, T scale) {
-    fill_vec_n(GetPtr(vec), scale, N);
-}
-
-template<typename T, size_t N>
-inline void FillScale(MatrixBase<T, N> &mat, T scale) {
-    fill_vec_n(GetPtr(mat), scale, N*N);
-}
-
-template<typename T, size_t N>
-inline void FillDiagonal(MatrixBase<T, N> &mat, T scale) {
-    fill_vec_n(GetPtr(mat), (T)0, N*N);
-    diagonal_mat_n(GetPtr(mat), scale, N);
-}
-
-template<typename T, size_t N>
-inline void Normalize(VectorBase<T, N> &vec) {
-    normalize_vec_n(GetPtr(vec), N);
-}
-
-template<typename T, size_t N>
-inline T Dot(VectorBase<T, N> &a, VectorBase<T, N> &b) {
-    return innerproduct_vec_n(GetPtr(a), GetPtr(b), N);
-}
-
-template<typename T, size_t N>
-inline T InnerProduct(VectorBase<T, N> &a, VectorBase<T, N> &b) {
-    return innerproduct_vec_n(GetPtr(a), GetPtr(b), N);
-}
-
-template<typename T>
-inline Vector3<T> CrossProduct(Vector3<T> &a, Vector3<T> &b) {
-    Vector3<T> out;
-    crossproduct_vec3(GetPtr(a), GetPtr(b), GetPtr(out));
-    return out;
-}
-
-template<typename T>
-inline Matrix4<T> InvertMat4(Matrix4<T> mat4) {
-    Matrix4<T> inv;
-    invert_mat4(GetPtr(mat4), GetPtr(inv));
-    return inv;
-}
-
-template<typename T>
-inline Matrix4<T> LookAt(Vector3<T> &eye, Vector3<T> &center, Vector3<T> &up) {
-    Matrix4<T> Matrix;
-    
-    lookat_mat4(GetPtr(eye), GetPtr(center), GetPtr(up), GetPtr(Matrix));
-
-    return Matrix;
-}
-*/
+#undef STATIC_ASSERT_TYPE
+#undef VEC3_X_DIM
+#undef VEC3_Y_DIM
+#undef VEC3_Z_DIM
+#undef SCALE_TYPE
 
 #endif
