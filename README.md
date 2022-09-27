@@ -6,7 +6,7 @@
 
 Vector3 是由 x、y、z 三個數值組合而成的向量，Vector4  是 x、y、z、w 四個數值。
 
-'''cpp
+```cpp
 int main(int argc, char **argv) {
 
     Vector3f a = {1,2,3}; // 宣告 float 的 Vector3
@@ -18,13 +18,13 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-'''
+```
 
 <br>
 
 Matrix4 是由四個 Vector4 組合而成的矩陣。
 
-'''cpp
+```cpp
 int main(int argc, char **argv) {
 
     Matrix4f a(8); // 宣告 float 的 Matrix4
@@ -42,4 +42,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-'''
+```
