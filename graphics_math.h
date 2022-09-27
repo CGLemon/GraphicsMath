@@ -25,13 +25,20 @@ static_assert(std::is_same<T, float>::value ||                 \
 #define VEC3_Z_DIM (2) // must 2
 
 #define MAT4_DIM_SIZE (4)
-#define MAT4_X_DIM (0) // equal to VEC3_X_DIM
-#define MAT4_Y_DIM (1) // equal to VEC3_Y_DIM
-#define MAT4_Z_DIM (2) // equal to VEC3_Z_DIM
+#define MAT4_X_DIM (VEC3_X_DIM) // equal to VEC3_X_DIM
+#define MAT4_Y_DIM (VEC3_Y_DIM) // equal to VEC3_Y_DIM
+#define MAT4_Z_DIM (VEC3_Z_DIM) // equal to VEC3_Z_DIM
 #define MAT4_W_DIM (3)
 
 #define CONST_SCALE_TYPE const double
 #define SCALE_TYPE double
+
+enum class kAxis : int {
+    X = VEC3_X_DIM,
+    Y = VEC3_Y_DIM,
+    Z = VEC3_Z_DIM,
+    W = MAT4_W_DIM
+};
 
 // C-like functions.
 
@@ -51,6 +58,13 @@ inline T GetZ(const T* vec3) {
     STATIC_ASSERT_TYPE(T);
     return vec3[VEC3_Z_DIM];
 }
+
+template<typename T>
+inline T GetW(const T* vec4) {
+    STATIC_ASSERT_TYPE(T);
+    return vec4[MAT4_W_DIM];
+}
+
 
 constexpr int GetMat4Index(const int y, const int x) {
     return y * MAT4_DIM_SIZE + x;
@@ -94,6 +108,29 @@ inline std::string Vec3ToString(const T* vec3) {
     return out.str();
 }
 
+// Convert the vector3 to std::string.
+template<typename T>
+inline std::string Vec4ToString(const T* vec4) {
+    STATIC_ASSERT_TYPE(T);
+
+    auto out = std::ostringstream{};
+    auto FloatToString = [](T val){
+        auto out = std::ostringstream{};
+        int p = 6;
+        int w = p + 6;
+        out << std::fixed << std::setw(w) << std::setprecision(p) << val;
+        return out.str();
+    };
+
+    out
+        << '('
+        << FloatToString(GetX(vec4)) << ", "
+        << FloatToString(GetY(vec4)) << ", "
+        << FloatToString(GetZ(vec4)) << ", "
+        << FloatToString(GetW(vec4)) << ")";
+    return out.str();
+}
+
 // Convert the matrix4 to std::string.
 template<typename T>
 inline std::string Mat4ToString(const T* mat4) {
@@ -133,6 +170,13 @@ inline void PrintVec3(const T* vec3) {
     STATIC_ASSERT_TYPE(T);
 
     std::cout << Vec3ToString(vec3) << std::endl;
+}
+
+template<typename T>
+inline void PrintVec4(const T* vec4) {
+    STATIC_ASSERT_TYPE(T);
+
+    std::cout << Vec4ToString(vec4) << std::endl;
 }
 
 template<typename T>
@@ -382,15 +426,6 @@ inline void MulMat4(const T* lhs, const T* rhs, T* out) {
 
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-
-            /*
-            SCALE_TYPE sum = 0.f;
-            for (int k = 0; k < N; k++) {
-                sum += lhs[i * N + k] * rhs[k * N + j];
-            }
-            out[i * N + j] = sum;
-            */
-
             CONST_SCALE_TYPE part0 = lhs[i * N + 0] * rhs[0 * N + j];
             CONST_SCALE_TYPE part1 = lhs[i * N + 1] * rhs[1 * N + j];
             CONST_SCALE_TYPE part2 = lhs[i * N + 2] * rhs[2 * N + j];
@@ -417,6 +452,50 @@ inline void MulMat4(const T* in, T* out, CONST_SCALE_TYPE scale) {
         out[yy] = in[yy] * scale;
         out[zz] = in[zz] * scale;
         out[ww] = in[ww] * scale;
+    }
+}
+
+// The matrix4 and vector3 multiplication operation, [out vec3] = [mat4] x [vec3].
+template<typename T>
+inline void MulMat4AndVec3(const T* mat4, const T* vec3, T* out) {
+    STATIC_ASSERT_TYPE(T);
+    constexpr int N = VEC3_DIM_SIZE;
+
+    for (int i = 0; i < N; ++i) {
+        const int xx = GetMat4Index(i, MAT4_X_DIM);
+        const int yy = GetMat4Index(i, MAT4_Y_DIM);
+        const int zz = GetMat4Index(i, MAT4_Z_DIM);
+        const int ww = GetMat4Index(i, MAT4_W_DIM);
+
+        SCALE_TYPE temp = 0.f; 
+        temp += mat4[xx] * vec3[VEC3_X_DIM];
+        temp += mat4[yy] * vec3[VEC3_Y_DIM];
+        temp += mat4[zz] * vec3[VEC3_Z_DIM];
+        temp += mat4[ww] * 1.f;
+
+        out[i] = temp;
+    }
+}
+
+// The matrix4 and vector3 multiplication operation, [out vec4] = [mat4] x [vec4].
+template<typename T>
+inline void MulMat4AndVec4(const T* mat4, const T* vec4, T* out) {
+    STATIC_ASSERT_TYPE(T);
+    constexpr int N = MAT4_DIM_SIZE;
+
+    for (int i = 0; i < N; ++i) {
+        const int xx = GetMat4Index(i, MAT4_X_DIM);
+        const int yy = GetMat4Index(i, MAT4_Y_DIM);
+        const int zz = GetMat4Index(i, MAT4_Z_DIM);
+        const int ww = GetMat4Index(i, MAT4_W_DIM);
+
+        SCALE_TYPE temp = 0.f; 
+        temp += mat4[xx] * vec4[VEC3_X_DIM];
+        temp += mat4[yy] * vec4[VEC3_Y_DIM];
+        temp += mat4[zz] * vec4[VEC3_Z_DIM];
+        temp += mat4[ww] * vec4[MAT4_W_DIM];
+
+        out[i] = temp;
     }
 }
 
@@ -480,17 +559,6 @@ inline void FillIdentityMat4(T* mat4, bool clear) {
     STATIC_ASSERT_TYPE(T);
 
     FillDiagonalMat4(mat4, 1.0f, clear);
-}
-
-template<typename T>
-inline void TranslationMat4(T* mat4, const T *vec3) {
-    STATIC_ASSERT_TYPE(T);
-
-    FillIdentityMat4(mat4, true);
-
-    mat4[GetMat4Index(MAT4_X_DIM, MAT4_W_DIM)] = vec3[VEC3_X_DIM];
-    mat4[GetMat4Index(MAT4_Y_DIM, MAT4_W_DIM)] = vec3[VEC3_Y_DIM];
-    mat4[GetMat4Index(MAT4_Z_DIM, MAT4_W_DIM)] = vec3[VEC3_Z_DIM];
 }
 
 // Fast compute the inverse of the 4x4 matrix.
@@ -622,18 +690,29 @@ inline void InvertMat4(const T* mat4, T* inv4) {
 }
 
 template<typename T>
-inline void RotationMat4AtAxis(T* mat4, const int axis, CONST_SCALE_TYPE scale, CONST_SCALE_TYPE degree) {
+inline void TranslationMat4(const T *vec3, T* mat4) {
+    STATIC_ASSERT_TYPE(T);
+
+    FillIdentityMat4(mat4, true);
+
+    mat4[GetMat4Index(MAT4_X_DIM, MAT4_W_DIM)] = vec3[VEC3_X_DIM];
+    mat4[GetMat4Index(MAT4_Y_DIM, MAT4_W_DIM)] = vec3[VEC3_Y_DIM];
+    mat4[GetMat4Index(MAT4_Z_DIM, MAT4_W_DIM)] = vec3[VEC3_Z_DIM];
+}
+
+template<typename T>
+inline void RotationMat4AtAxis(T* mat4, const kAxis axis, CONST_SCALE_TYPE degree) {
     STATIC_ASSERT_TYPE(T);
     CONST_SCALE_TYPE radians = ToRadians(degree);
 
     FillIdentityMat4(mat4, true);
 
-    if (std::abs(scale) < 1e-8f) {
-        return; // return identity matrix
+    if ((int)axis == MAT4_W_DIM) {
+        return;
     }
 
     SCALE_TYPE vec3[3] = {0};
-    vec3[axis] = 1.f;
+    vec3[(int)axis] = 1.f;
 
     CONST_SCALE_TYPE rx = -vec3[VEC3_X_DIM];
     CONST_SCALE_TYPE ry = -vec3[VEC3_Y_DIM];
@@ -715,7 +794,7 @@ template<typename T>
 inline void PerspectiveMat4(CONST_SCALE_TYPE fov,
                                 CONST_SCALE_TYPE aspect,
                                 CONST_SCALE_TYPE near,
-                                CONST_SCALE_TYPE far, 
+                                CONST_SCALE_TYPE far,
                                 T *mat4) {
     CONST_SCALE_TYPE scale_y = 1.f / std::tan(ToRadians(fov) / 2.f);
     CONST_SCALE_TYPE scale_x = scale_y / aspect;
@@ -729,6 +808,73 @@ inline void PerspectiveMat4(CONST_SCALE_TYPE fov,
     mat4[GetMat4Index(MAT4_Z_DIM, MAT4_W_DIM)] = -1.f;
     mat4[GetMat4Index(MAT4_W_DIM, MAT4_Z_DIM)] = (2*far*near)/diff;
 }
+
+template<typename T>
+struct Vector4 {
+    Vector4() : x(0), y(0), z(0), w(0) {}
+    Vector4(T scale) : x(scale), y(scale), z(scale), w(scale) {}
+    Vector4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+    Vector4(std::initializer_list<T> list) {
+        T* p = Ptr();
+        for (int i = 0; i < 4; ++i) {
+            *(p+i) = *(std::begin(list) + i);
+        }
+    }
+
+    Vector4(const Vector4<float> &other) {
+        x = other.x; y = other.y; z = other.z; w = other.w;
+    }
+    Vector4(const Vector4<float> &&other) {
+        x = other.x; y = other.y; z = other.z; w = other.w;
+    }
+    Vector4(const Vector4<double> &other) {
+        x = other.x; y = other.y; z = other.z; w = other.w;
+    }
+    Vector4(const Vector4<double> &&other) {
+        x = other.x; y = other.y; z = other.z; w = other.w;
+    }
+
+    inline T *GetPtr() {
+        // same as Ptr()
+        return (T*)(this);
+    }
+    inline T *Ptr() {
+        return (T*)(this);
+    }
+    inline T& operator [](int idx) {
+        return Ptr()[idx];
+    }
+    inline T operator [](int idx) const {
+        return Ptr()[idx];
+    }
+
+    std::string ToString() {
+        return Vec4ToString(Ptr());
+    }
+
+    // assign operators
+    inline Vector4<T> &operator=(const Vector4<float> &rhs) {
+        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
+        return *this;
+    }
+    inline Vector4<T> &operator=(const Vector4<float> &&rhs) {
+        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
+        return *this;  
+    }
+    inline Vector4<T> &operator=(const Vector4<double> &rhs) {
+        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
+        return *this;
+    }
+    inline Vector4<T> &operator=(const Vector4<double> &&rhs) {
+        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
+        return *this;  
+    }
+
+    T x; // 0
+    T y; // 1
+    T z; // 2
+    T w; // 3
+};
 
 template<typename T>
 struct Vector3 {
@@ -771,6 +917,10 @@ struct Vector3 {
 
     std::string ToString() {
         return Vec3ToString(Ptr());
+    }
+    Vector4<T> ToVec4() const {
+        Vector4<T> vec4(x,y,z,1);
+        return vec4;
     }
 
     // assign operators
@@ -913,69 +1063,6 @@ struct Vector3 {
     T x; // 0
     T y; // 1
     T z; // 2
-};
-
-template<typename T>
-struct Vector4 {
-    Vector4() : x(0), y(0), z(0), w(0) {}
-    Vector4(T scale) : x(scale), y(scale), z(scale), w(scale) {}
-    Vector4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
-    Vector4(std::initializer_list<T> list) {
-        T* p = Ptr();
-        for (int i = 0; i < 4; ++i) {
-            *(p+i) = *(std::begin(list) + i);
-        }
-    }
-
-    Vector4(const Vector4<float> &other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-    Vector4(const Vector4<float> &&other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-    Vector4(const Vector4<double> &other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-    Vector4(const Vector4<double> &&other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-
-    inline T *GetPtr() {
-        // same as Ptr()
-        return (T*)(this);
-    }
-    inline T *Ptr() {
-        return (T*)(this);
-    }
-    inline T& operator [](int idx) {
-        return Ptr()[idx];
-    }
-    inline T operator [](int idx) const {
-        return Ptr()[idx];
-    }
-
-    // assign operators
-    inline Vector4<T> &operator=(const Vector4<float> &rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;
-    }
-    inline Vector4<T> &operator=(const Vector4<float> &&rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;  
-    }
-    inline Vector4<T> &operator=(const Vector4<double> &rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;
-    }
-    inline Vector4<T> &operator=(const Vector4<double> &&rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;  
-    }
-
-    T x; // 0
-    T y; // 1
-    T z; // 2
-    T w; // 3
 };
 
 template<typename T, typename S=Vector4<T>>
@@ -1148,7 +1235,7 @@ struct Matrix4 {
     }
     template<typename V>
     friend Matrix4<T> operator*(V scale, Matrix4<T> &rhs) {
-        Vector3<T> out;
+        Matrix4<T> out;
         MulMat4(rhs.Ptr(), out.Ptr(), scale);
         return out;
     }
@@ -1170,7 +1257,26 @@ struct Matrix4 {
         MulMat4(Ptr(), Ptr(), scale);
         return *this;
     }
-
+    Vector3<T> operator*(Vector3<T> &rhs) {
+        Vector3<T> out;
+        MulMat4AndVec3(Ptr(), rhs.Ptr(), out.Ptr());
+        return out;
+    }
+    Vector3<T> operator*(Vector3<T> &&rhs) {
+        Vector3<T> out;
+        MulMat4AndVec3(Ptr(), rhs.Ptr(), out.Ptr());
+        return out;
+    }
+    Vector4<T> operator*(Vector4<T> &rhs) {
+        Vector4<T> out;
+        MulMat4AndVec4(Ptr(), rhs.Ptr(), out.Ptr());
+        return out;
+    }
+    Vector4<T> operator*(Vector4<T> &&rhs) {
+        Vector4<T> out;
+        MulMat4AndVec4(Ptr(), rhs.Ptr(), out.Ptr());
+        return out;
+    }
     // division operators
     template<typename V>
     Matrix4<T> operator/(V scale) {
@@ -1196,6 +1302,8 @@ using Vector4d = Vector4<float>;
 using Matrix4f = Matrix4<float>;
 using Matrix4d = Matrix4<double>;
 
+const Matrix4f kIdentity_f = Matrix4f(1);
+const Matrix4d kIdentity_d = Matrix4d(1);
 
 template<typename T>
 constexpr T* GetPtr(Vector3<T> &v) {
@@ -1210,25 +1318,50 @@ constexpr T* GetPtr(Matrix4<T> &m) {
     return m.Ptr();
 }
 
-/*
-template<typename V, typename T=float>
-inline Matrix4<T> GetLookatMat4(V&& eye, V&& center, V&& up) {
-    Matrix4<T> mat4;
-    LookatMat4(GetPtr(eye), GetPtr(center), GetPtr(up), GetPtr(mat4));
-    return mat4;
+// Base matrix defines the type.
+template<typename T, typename V>
+inline Matrix4<T> GetLookatMat4(Matrix4<T> base, V&& eye, V&& center, V&& up) {
+    LookatMat4(GetPtr(eye), GetPtr(center), GetPtr(up), GetPtr(base));
+    return base;
 }
 
-
-template<typename T=double>
-inline Matrix4<T> GetPerspectiveMat4(CONST_SCALE_TYPE fov,
+// Base matrix defines the type.
+template<typename T>
+inline Matrix4<T> GetPerspectiveMat4(Matrix4<T> base,
+                                         CONST_SCALE_TYPE fov,
                                          CONST_SCALE_TYPE aspect,
                                          CONST_SCALE_TYPE near,
                                          CONST_SCALE_TYPE far) {
-    Matrix4<T> mat4;
-    PerspectiveMat4(fov, aspect, near, far, GetPtr(mat4));
-    return mat4;
+    PerspectiveMat4(fov, aspect, near, far, GetPtr(base));
+    return base;
 }
- */
+
+// Base matrix defines the type.
+template<typename T>
+inline Matrix4<T> GetRotation(Matrix4<T> base, const kAxis axis, CONST_SCALE_TYPE degree) {
+    RotationMat4AtAxis(GetPtr(base), axis, degree);
+    return base;
+}
+
+template<typename T>
+inline Matrix4<T> Invert(Matrix4<T> &in) {
+    Matrix4<T> out;
+    InvertMat4(GetPtr(in), GetPtr(out));
+    return out;
+}
+
+template<typename T>
+inline Matrix4<T> Invert(Matrix4<T> &&in) {
+    Matrix4<T> out;
+    InvertMat4(GetPtr(in), GetPtr(out));
+    return out;
+}
+
+template<typename T, typename V>
+inline Matrix4<T> GetTranslation(Matrix4<T> base, V&& vec) {
+    TranslationMat4(GetPtr(vec), GetPtr(base));
+    return base;
+}
 
 #undef STATIC_ASSERT_TYPE
 
