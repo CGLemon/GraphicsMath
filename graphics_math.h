@@ -20,49 +20,39 @@ static_assert(std::is_same<T, float>::value ||                 \
                   "Only support the float and double type.");
 
 #define VEC3_DIM_SIZE (3)
-#define VEC3_X_DIM (0) // must 0
-#define VEC3_Y_DIM (1) // must 1
-#define VEC3_Z_DIM (2) // must 2
-
 #define MAT4_DIM_SIZE (4)
-#define MAT4_X_DIM (VEC3_X_DIM) // equal to VEC3_X_DIM
-#define MAT4_Y_DIM (VEC3_Y_DIM) // equal to VEC3_Y_DIM
-#define MAT4_Z_DIM (VEC3_Z_DIM) // equal to VEC3_Z_DIM
-#define MAT4_W_DIM (3)
 
 #define CONST_SCALE_TYPE const double
 #define SCALE_TYPE double
 
-enum class kAxis : int {
-    X = VEC3_X_DIM,
-    Y = VEC3_Y_DIM,
-    Z = VEC3_Z_DIM,
-    W = MAT4_W_DIM
-};
+static constexpr int kAxisX = 0;
+static constexpr int kAxisZ = 1;
+static constexpr int kAxisY = 2;
+static constexpr int kAxisW = 3;
 
 // C-like functions.
 
 template<typename T>
-inline T GetX(const T* vec3) {
+constexpr T GetX(const T* vec3) {
     STATIC_ASSERT_TYPE(T);
-    return vec3[VEC3_X_DIM];
+    return vec3[kAxisX];
 }
 template<typename T>
-inline T GetY(const T* vec3) {
+constexpr T GetY(const T* vec3) {
     STATIC_ASSERT_TYPE(T);
-    return vec3[VEC3_Y_DIM];
-}
-
-template<typename T>
-inline T GetZ(const T* vec3) {
-    STATIC_ASSERT_TYPE(T);
-    return vec3[VEC3_Z_DIM];
+    return vec3[kAxisY];
 }
 
 template<typename T>
-inline T GetW(const T* vec4) {
+constexpr T GetZ(const T* vec3) {
     STATIC_ASSERT_TYPE(T);
-    return vec4[MAT4_W_DIM];
+    return vec3[kAxisZ];
+}
+
+template<typename T>
+constexpr T GetW(const T* vec4) {
+    STATIC_ASSERT_TYPE(T);
+    return vec4[kAxisW];
 }
 
 
@@ -151,10 +141,10 @@ inline std::string Mat4ToString(const T* mat4) {
         const T* offset = mat4 + i * N;
         out
             << "  ("
-            << FloatToString(offset[MAT4_X_DIM]) << ", "
-            << FloatToString(offset[MAT4_Y_DIM]) << ", "
-            << FloatToString(offset[MAT4_Z_DIM]) << ", "
-            << FloatToString(offset[MAT4_W_DIM]) << ")";
+            << FloatToString(offset[kAxisX]) << ", "
+            << FloatToString(offset[kAxisY]) << ", "
+            << FloatToString(offset[kAxisZ]) << ", "
+            << FloatToString(offset[kAxisW]) << ")";
         if (i != N-1) {
             out << "\n";
         }
@@ -191,9 +181,9 @@ template<typename T>
 inline void FillVec3(T* vec3, CONST_SCALE_TYPE scale) {
     STATIC_ASSERT_TYPE(T);
 
-    vec3[VEC3_X_DIM] =
-        vec3[VEC3_Y_DIM] =
-        vec3[VEC3_Z_DIM] =
+    vec3[kAxisX] =
+        vec3[kAxisY] =
+        vec3[kAxisZ] =
         scale;
 }
 
@@ -202,9 +192,9 @@ template<typename T>
 inline void AddVec3(const T* lhs, const T* rhs, T* out) {
     STATIC_ASSERT_TYPE(T);
 
-    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] + rhs[VEC3_X_DIM];
-    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] + rhs[VEC3_Y_DIM];
-    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] + rhs[VEC3_Z_DIM];
+    out[kAxisX] = lhs[kAxisX] + rhs[kAxisX];
+    out[kAxisY] = lhs[kAxisY] + rhs[kAxisY];
+    out[kAxisZ] = lhs[kAxisZ] + rhs[kAxisZ];
 }
 
 // The vector3 and scale addition operation, [out vec] = [in vec] + scale.
@@ -212,9 +202,9 @@ template<typename T>
 inline void AddVec3(const T* in, T* out, CONST_SCALE_TYPE scale) {
     STATIC_ASSERT_TYPE(T);
 
-    out[VEC3_X_DIM] = in[VEC3_X_DIM] + scale;
-    out[VEC3_Y_DIM] = in[VEC3_Y_DIM] + scale;
-    out[VEC3_Z_DIM] = in[VEC3_Z_DIM] + scale;
+    out[kAxisX] = in[kAxisX] + scale;
+    out[kAxisY] = in[kAxisY] + scale;
+    out[kAxisZ] = in[kAxisZ] + scale;
 }
 
 // The vector3 subtraction operation, [out vec] = [left vec] - [right vec].
@@ -222,9 +212,9 @@ template<typename T>
 inline void SubVec3(const T* lhs, const T* rhs, T* out) {
     STATIC_ASSERT_TYPE(T);
 
-    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] - rhs[VEC3_X_DIM];
-    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] - rhs[VEC3_Y_DIM];
-    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] - rhs[VEC3_Z_DIM];
+    out[kAxisX] = lhs[kAxisX] - rhs[kAxisX];
+    out[kAxisY] = lhs[kAxisY] - rhs[kAxisY];
+    out[kAxisZ] = lhs[kAxisZ] - rhs[kAxisZ];
 }
 
 // The vector3 and scale subtraction operation, 
@@ -235,13 +225,13 @@ inline void SubVec3(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
     STATIC_ASSERT_TYPE(T);
 
     if (!invert) {
-        out[VEC3_X_DIM] = in[VEC3_X_DIM] - scale;
-        out[VEC3_Y_DIM] = in[VEC3_Y_DIM] - scale;
-        out[VEC3_Z_DIM] = in[VEC3_Z_DIM] - scale;
+        out[kAxisX] = in[kAxisX] - scale;
+        out[kAxisY] = in[kAxisY] - scale;
+        out[kAxisZ] = in[kAxisZ] - scale;
     } else {
-        out[VEC3_X_DIM] = scale - in[VEC3_X_DIM];
-        out[VEC3_Y_DIM] = scale - in[VEC3_Y_DIM];
-        out[VEC3_Z_DIM] = scale - in[VEC3_Z_DIM];
+        out[kAxisX] = scale - in[kAxisX];
+        out[kAxisY] = scale - in[kAxisY];
+        out[kAxisZ] = scale - in[kAxisZ];
     }
 }
 
@@ -250,9 +240,9 @@ template<typename T>
 inline void MulVec3(const T* lhs, const T* rhs, T* out) {
     STATIC_ASSERT_TYPE(T);
 
-    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] * rhs[VEC3_X_DIM];
-    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] * rhs[VEC3_Y_DIM];
-    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] * rhs[VEC3_Z_DIM];
+    out[kAxisX] = lhs[kAxisX] * rhs[kAxisX];
+    out[kAxisY] = lhs[kAxisY] * rhs[kAxisY];
+    out[kAxisZ] = lhs[kAxisZ] * rhs[kAxisZ];
 }
 
 // The vector3 multiplication operation, [out vec] = [in vec] x scale.
@@ -260,9 +250,9 @@ template<typename T>
 inline void MulVec3(const T* in, T* out, CONST_SCALE_TYPE scale) {
     STATIC_ASSERT_TYPE(T);
 
-    out[VEC3_X_DIM] = in[VEC3_X_DIM] * scale;
-    out[VEC3_Y_DIM] = in[VEC3_Y_DIM] * scale;
-    out[VEC3_Z_DIM] = in[VEC3_Z_DIM] * scale;
+    out[kAxisX] = in[kAxisX] * scale;
+    out[kAxisY] = in[kAxisY] * scale;
+    out[kAxisZ] = in[kAxisZ] * scale;
 }
 
 // The vector3 division operation, [out vec] = [left vec] / [right vec].
@@ -271,9 +261,9 @@ template<typename T>
 inline void DivVec3(const T* lhs, const T* rhs, T* out) {
     STATIC_ASSERT_TYPE(T);
 
-    out[VEC3_X_DIM] = lhs[VEC3_X_DIM] / rhs[VEC3_X_DIM];
-    out[VEC3_Y_DIM] = lhs[VEC3_Y_DIM] / rhs[VEC3_Y_DIM];
-    out[VEC3_Z_DIM] = lhs[VEC3_Z_DIM] / rhs[VEC3_Z_DIM];
+    out[kAxisX] = lhs[kAxisX] / rhs[kAxisX];
+    out[kAxisY] = lhs[kAxisY] / rhs[kAxisY];
+    out[kAxisZ] = lhs[kAxisZ] / rhs[kAxisZ];
 }
 
 // The vector3 and scale division operation, 
@@ -284,13 +274,13 @@ inline void DivVec3(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
     STATIC_ASSERT_TYPE(T);
 
     if (!invert) {
-        out[VEC3_X_DIM] = in[VEC3_X_DIM] / scale;
-        out[VEC3_Y_DIM] = in[VEC3_Y_DIM] / scale;
-        out[VEC3_Z_DIM] = in[VEC3_Z_DIM] / scale;
+        out[kAxisX] = in[kAxisX] / scale;
+        out[kAxisY] = in[kAxisY] / scale;
+        out[kAxisZ] = in[kAxisZ] / scale;
     } else {
-        out[VEC3_X_DIM] = scale / in[VEC3_X_DIM];
-        out[VEC3_Y_DIM] = scale / in[VEC3_Y_DIM];
-        out[VEC3_Z_DIM] = scale / in[VEC3_Z_DIM];
+        out[kAxisX] = scale / in[kAxisX];
+        out[kAxisY] = scale / in[kAxisY];
+        out[kAxisZ] = scale / in[kAxisZ];
     }
 }
 
@@ -300,9 +290,9 @@ template<typename T>
 inline void CrossproductVec3(const T* lhs, const T* rhs, T* out) {
     STATIC_ASSERT_TYPE(T);
 
-    out[VEC3_X_DIM] = lhs[VEC3_Y_DIM] * rhs[VEC3_Z_DIM] - lhs[VEC3_Z_DIM] * rhs[VEC3_Y_DIM];
-    out[VEC3_Y_DIM] = lhs[VEC3_Z_DIM] * rhs[VEC3_X_DIM] - lhs[VEC3_X_DIM] * rhs[VEC3_Z_DIM];
-    out[VEC3_Z_DIM] = lhs[VEC3_X_DIM] * rhs[VEC3_Y_DIM] - lhs[VEC3_Y_DIM] * rhs[VEC3_X_DIM];
+    out[kAxisX] = lhs[kAxisY] * rhs[kAxisZ] - lhs[kAxisZ] * rhs[kAxisY];
+    out[kAxisY] = lhs[kAxisZ] * rhs[kAxisX] - lhs[kAxisX] * rhs[kAxisZ];
+    out[kAxisZ] = lhs[kAxisX] * rhs[kAxisY] - lhs[kAxisY] * rhs[kAxisX];
 }
 
 // The vector3 inner product operation.
@@ -312,9 +302,9 @@ inline T InnerproductVec3(const T* lhs, const T* rhs) {
     STATIC_ASSERT_TYPE(T);
 
     SCALE_TYPE val = 0.f;
-    val += lhs[VEC3_X_DIM] * rhs[VEC3_X_DIM];
-    val += lhs[VEC3_Y_DIM] * rhs[VEC3_Y_DIM];
-    val += lhs[VEC3_Z_DIM] * rhs[VEC3_Z_DIM];
+    val += lhs[kAxisX] * rhs[kAxisX];
+    val += lhs[kAxisY] * rhs[kAxisY];
+    val += lhs[kAxisZ] * rhs[kAxisZ];
     return val;
 }
 
@@ -327,9 +317,9 @@ inline void NormalizingVec3(const T* in, T* out) {
     STATIC_ASSERT_TYPE(T);
 
     SCALE_TYPE scale = 1.f/std::sqrt(InnerproductVec3(in, in));
-    out[VEC3_X_DIM] *= scale;
-    out[VEC3_Y_DIM] *= scale;
-    out[VEC3_Z_DIM] *= scale;
+    out[kAxisX] *= scale;
+    out[kAxisY] *= scale;
+    out[kAxisZ] *= scale;
 }
 
 // The matrix4 addition operation, [out mat] = [left mat] + [right mat].
@@ -339,10 +329,10 @@ inline void AddMat4(const T* lhs, const T* rhs, T* out) {
     constexpr int N = MAT4_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         out[xx] = lhs[xx] + rhs[xx];
         out[yy] = lhs[yy] + rhs[yy];
@@ -358,10 +348,10 @@ inline void AddMat4(const T* in, T* out, CONST_SCALE_TYPE scale) {
     constexpr int N = MAT4_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         out[xx] = in[xx] + scale;
         out[yy] = in[yy] + scale;
@@ -377,10 +367,10 @@ inline void SubMat4(const T* lhs, const T* rhs, T* out) {
     constexpr int N = MAT4_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         out[xx] = lhs[xx] - rhs[xx];
         out[yy] = lhs[yy] - rhs[yy];
@@ -398,10 +388,10 @@ inline void SubMat4(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
     constexpr int N = MAT4_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         if (!invert) {
             out[xx] = in[xx] - scale;
@@ -443,10 +433,10 @@ inline void MulMat4(const T* in, T* out, CONST_SCALE_TYPE scale) {
     constexpr int N = MAT4_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         out[xx] = in[xx] * scale;
         out[yy] = in[yy] * scale;
@@ -462,15 +452,15 @@ inline void MulMat4AndVec3(const T* mat4, const T* vec3, T* out) {
     constexpr int N = VEC3_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         SCALE_TYPE temp = 0.f; 
-        temp += mat4[xx] * vec3[VEC3_X_DIM];
-        temp += mat4[yy] * vec3[VEC3_Y_DIM];
-        temp += mat4[zz] * vec3[VEC3_Z_DIM];
+        temp += mat4[xx] * vec3[kAxisX];
+        temp += mat4[yy] * vec3[kAxisY];
+        temp += mat4[zz] * vec3[kAxisZ];
         temp += mat4[ww] * 1.f;
 
         out[i] = temp;
@@ -484,16 +474,16 @@ inline void MulMat4AndVec4(const T* mat4, const T* vec4, T* out) {
     constexpr int N = MAT4_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         SCALE_TYPE temp = 0.f; 
-        temp += mat4[xx] * vec4[VEC3_X_DIM];
-        temp += mat4[yy] * vec4[VEC3_Y_DIM];
-        temp += mat4[zz] * vec4[VEC3_Z_DIM];
-        temp += mat4[ww] * vec4[MAT4_W_DIM];
+        temp += mat4[xx] * vec4[kAxisX];
+        temp += mat4[yy] * vec4[kAxisY];
+        temp += mat4[zz] * vec4[kAxisZ];
+        temp += mat4[ww] * vec4[kAxisW];
 
         out[i] = temp;
     }
@@ -508,10 +498,10 @@ inline void DivMat4(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
     constexpr int N = MAT4_DIM_SIZE;
 
     for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, MAT4_X_DIM);
-        const int yy = GetMat4Index(i, MAT4_Y_DIM);
-        const int zz = GetMat4Index(i, MAT4_Z_DIM);
-        const int ww = GetMat4Index(i, MAT4_W_DIM);
+        const int xx = GetMat4Index(i, kAxisX);
+        const int yy = GetMat4Index(i, kAxisY);
+        const int zz = GetMat4Index(i, kAxisZ);
+        const int ww = GetMat4Index(i, kAxisW);
 
         if (!invert) {
             out[xx] = in[xx] / scale;
@@ -547,10 +537,10 @@ inline void FillDiagonalMat4(T* mat4, CONST_SCALE_TYPE scale, bool clear) {
         FillMat4(mat4, 0.0f); // clear
     }
 
-    mat4[GetMat4Index(MAT4_X_DIM)] = scale;
-    mat4[GetMat4Index(MAT4_Y_DIM)] = scale;
-    mat4[GetMat4Index(MAT4_Z_DIM)] = scale;
-    mat4[GetMat4Index(MAT4_W_DIM)] = scale;
+    mat4[GetMat4Index(kAxisX)] = scale;
+    mat4[GetMat4Index(kAxisY)] = scale;
+    mat4[GetMat4Index(kAxisZ)] = scale;
+    mat4[GetMat4Index(kAxisW)] = scale;
 }
 
 // Fill the identity matrix4.
@@ -695,46 +685,46 @@ inline void TranslationMat4(const T *vec3, T* mat4) {
 
     FillIdentityMat4(mat4, true);
 
-    mat4[GetMat4Index(MAT4_X_DIM, MAT4_W_DIM)] = vec3[VEC3_X_DIM];
-    mat4[GetMat4Index(MAT4_Y_DIM, MAT4_W_DIM)] = vec3[VEC3_Y_DIM];
-    mat4[GetMat4Index(MAT4_Z_DIM, MAT4_W_DIM)] = vec3[VEC3_Z_DIM];
+    mat4[GetMat4Index(kAxisX, kAxisW)] = vec3[kAxisX];
+    mat4[GetMat4Index(kAxisY, kAxisW)] = vec3[kAxisY];
+    mat4[GetMat4Index(kAxisZ, kAxisW)] = vec3[kAxisZ];
 }
 
 template<typename T>
-inline void RotationMat4AtAxis(T* mat4, const kAxis axis, CONST_SCALE_TYPE degree) {
+inline void RotationMat4AtAxis(T* mat4, const int axis, CONST_SCALE_TYPE degree) {
     STATIC_ASSERT_TYPE(T);
     CONST_SCALE_TYPE radians = ToRadians(degree);
 
     FillIdentityMat4(mat4, true);
 
-    if ((int)axis == MAT4_W_DIM) {
+    if (axis == kAxisW) {
         return;
     }
 
     SCALE_TYPE vec3[3] = {0};
     vec3[(int)axis] = 1.f;
 
-    CONST_SCALE_TYPE rx = -vec3[VEC3_X_DIM];
-    CONST_SCALE_TYPE ry = -vec3[VEC3_Y_DIM];
-    CONST_SCALE_TYPE rz = -vec3[VEC3_Z_DIM];
+    CONST_SCALE_TYPE rx = -vec3[kAxisX];
+    CONST_SCALE_TYPE ry = -vec3[kAxisY];
+    CONST_SCALE_TYPE rz = -vec3[kAxisZ];
 
     CONST_SCALE_TYPE cos_v = std::cos(radians);
     CONST_SCALE_TYPE sin_v = std::sin(radians);
 
     // x
-    mat4[GetMat4Index(MAT4_X_DIM, VEC3_X_DIM)] =       1 * cos_v     + rx * rx * (1-cos_v);
-    mat4[GetMat4Index(MAT4_X_DIM, VEC3_Y_DIM)] = rx * ry * (1-cos_v) -      rz * sin_v;
-    mat4[GetMat4Index(MAT4_X_DIM, VEC3_Z_DIM)] = rx * rz * (1-cos_v) +      ry * sin_v;
+    mat4[GetMat4Index(kAxisX, kAxisX)] =       1 * cos_v     + rx * rx * (1-cos_v);
+    mat4[GetMat4Index(kAxisX, kAxisY)] = rx * ry * (1-cos_v) -      rz * sin_v;
+    mat4[GetMat4Index(kAxisX, kAxisZ)] = rx * rz * (1-cos_v) +      ry * sin_v;
 
     // y
-    mat4[GetMat4Index(MAT4_Y_DIM, VEC3_X_DIM)] = ry * rx * (1-cos_v) +      rz * sin_v;
-    mat4[GetMat4Index(MAT4_Y_DIM, VEC3_Y_DIM)] =       1 * cos_v     + ry * ry * (1-cos_v);
-    mat4[GetMat4Index(MAT4_Y_DIM, VEC3_Z_DIM)] = ry * rz * (1-cos_v) -      rx * sin_v;
+    mat4[GetMat4Index(kAxisY, kAxisX)] = ry * rx * (1-cos_v) +      rz * sin_v;
+    mat4[GetMat4Index(kAxisY, kAxisY)] =       1 * cos_v     + ry * ry * (1-cos_v);
+    mat4[GetMat4Index(kAxisY, kAxisZ)] = ry * rz * (1-cos_v) -      rx * sin_v;
 
     // z
-    mat4[GetMat4Index(MAT4_Z_DIM, VEC3_X_DIM)] = rz * rx * (1-cos_v) -      ry * sin_v;
-    mat4[GetMat4Index(MAT4_Z_DIM, VEC3_Y_DIM)] = rz * ry * (1-cos_v) +      rx * sin_v;
-    mat4[GetMat4Index(MAT4_Z_DIM, VEC3_Z_DIM)] =       1 * cos_v     + rz * rz * (1-cos_v);
+    mat4[GetMat4Index(kAxisZ, kAxisX)] = rz * rx * (1-cos_v) -      ry * sin_v;
+    mat4[GetMat4Index(kAxisZ, kAxisY)] = rz * ry * (1-cos_v) +      rx * sin_v;
+    mat4[GetMat4Index(kAxisZ, kAxisZ)] =       1 * cos_v     + rz * rz * (1-cos_v);
 }
 
 // Compute the look-at matrix.
@@ -757,19 +747,19 @@ inline void LookatMat4(const T* eye, const T* center, const T* up, T* mat4) {
     NormalizingVec3(buf_y, buf_y); // buf_y = norm(buf_y)
 
     // x
-    mat4[GetMat4Index(MAT4_X_DIM, VEC3_X_DIM)] = buf_x[VEC3_X_DIM];
-    mat4[GetMat4Index(MAT4_X_DIM, VEC3_Y_DIM)] = buf_y[VEC3_X_DIM];
-    mat4[GetMat4Index(MAT4_X_DIM, VEC3_Z_DIM)] = buf_z[VEC3_X_DIM];
+    mat4[GetMat4Index(kAxisX, kAxisX)] = buf_x[kAxisX];
+    mat4[GetMat4Index(kAxisX, kAxisY)] = buf_y[kAxisX];
+    mat4[GetMat4Index(kAxisX, kAxisZ)] = buf_z[kAxisX];
 
     // y
-    mat4[GetMat4Index(MAT4_Y_DIM, VEC3_X_DIM)] = buf_x[VEC3_Y_DIM];
-    mat4[GetMat4Index(MAT4_Y_DIM, VEC3_Y_DIM)] = buf_y[VEC3_Y_DIM];
-    mat4[GetMat4Index(MAT4_Y_DIM, VEC3_Z_DIM)] = buf_z[VEC3_Y_DIM];
+    mat4[GetMat4Index(kAxisY, kAxisX)] = buf_x[kAxisY];
+    mat4[GetMat4Index(kAxisY, kAxisY)] = buf_y[kAxisY];
+    mat4[GetMat4Index(kAxisY, kAxisZ)] = buf_z[kAxisY];
 
     // z
-    mat4[GetMat4Index(MAT4_Z_DIM, VEC3_X_DIM)] = buf_x[VEC3_Z_DIM];
-    mat4[GetMat4Index(MAT4_Z_DIM, VEC3_Y_DIM)] = buf_y[VEC3_Z_DIM];
-    mat4[GetMat4Index(MAT4_Z_DIM, VEC3_Z_DIM)] = buf_z[VEC3_Z_DIM];
+    mat4[GetMat4Index(kAxisZ, kAxisX)] = buf_x[kAxisZ];
+    mat4[GetMat4Index(kAxisZ, kAxisY)] = buf_y[kAxisZ];
+    mat4[GetMat4Index(kAxisZ, kAxisZ)] = buf_z[kAxisZ];
 
     // all vecs
     for (int i = 0; i < 9; ++i) {
@@ -777,14 +767,14 @@ inline void LookatMat4(const T* eye, const T* center, const T* up, T* mat4) {
     }
 
     // w
-    mat4[GetMat4Index(MAT4_W_DIM, VEC3_X_DIM)] = InnerproductVec3(buf_x, eye);
-    mat4[GetMat4Index(MAT4_W_DIM, VEC3_Y_DIM)] = InnerproductVec3(buf_y, eye);
-    mat4[GetMat4Index(MAT4_W_DIM, VEC3_Z_DIM)] = InnerproductVec3(buf_z, eye);
+    mat4[GetMat4Index(kAxisW, kAxisX)] = InnerproductVec3(buf_x, eye);
+    mat4[GetMat4Index(kAxisW, kAxisY)] = InnerproductVec3(buf_y, eye);
+    mat4[GetMat4Index(kAxisW, kAxisZ)] = InnerproductVec3(buf_z, eye);
 
-    mat4[GetMat4Index(MAT4_X_DIM, MAT4_W_DIM)] = 0.f;
-    mat4[GetMat4Index(MAT4_Y_DIM, MAT4_W_DIM)] = 0.f;
-    mat4[GetMat4Index(MAT4_Z_DIM, MAT4_W_DIM)] = 0.f;
-    mat4[GetMat4Index(MAT4_W_DIM, MAT4_W_DIM)] = 1.f;
+    mat4[GetMat4Index(kAxisX, kAxisW)] = 0.f;
+    mat4[GetMat4Index(kAxisY, kAxisW)] = 0.f;
+    mat4[GetMat4Index(kAxisZ, kAxisW)] = 0.f;
+    mat4[GetMat4Index(kAxisW, kAxisW)] = 1.f;
 
     free(main_buf);
 }
@@ -802,11 +792,12 @@ inline void PerspectiveMat4(CONST_SCALE_TYPE fov,
 
     FillMat4(mat4, 0.0f); // clear
 
-    mat4[GetMat4Index(MAT4_X_DIM)] = scale_x;
-    mat4[GetMat4Index(MAT4_Y_DIM)] = scale_y;
-    mat4[GetMat4Index(MAT4_Z_DIM)] = (near + far)/diff;
-    mat4[GetMat4Index(MAT4_Z_DIM, MAT4_W_DIM)] = -1.f;
-    mat4[GetMat4Index(MAT4_W_DIM, MAT4_Z_DIM)] = (2*far*near)/diff;
+    mat4[GetMat4Index(kAxisX)] = scale_x;
+    mat4[GetMat4Index(kAxisY)] = scale_y;
+    mat4[GetMat4Index(kAxisZ)] = (near + far)/diff;
+
+    mat4[GetMat4Index(kAxisZ, kAxisW)] = -1.f;
+    mat4[GetMat4Index(kAxisW, kAxisZ)] = (2*far*near)/diff;
 }
 
 template<typename T>
@@ -1338,7 +1329,7 @@ inline Matrix4<T> GetPerspectiveMat4(Matrix4<T> base,
 
 // Base matrix defines the type.
 template<typename T>
-inline Matrix4<T> GetRotation(Matrix4<T> base, const kAxis axis, CONST_SCALE_TYPE degree) {
+inline Matrix4<T> GetRotation(Matrix4<T> base, const int axis, CONST_SCALE_TYPE degree) {
     RotationMat4AtAxis(GetPtr(base), axis, degree);
     return base;
 }
@@ -1366,15 +1357,7 @@ inline Matrix4<T> GetTranslation(Matrix4<T> base, V&& vec) {
 #undef STATIC_ASSERT_TYPE
 
 #undef VEC3_DIM_SIZE
-#undef VEC3_X_DIM
-#undef VEC3_Y_DIM
-#undef VEC3_Z_DIM
-
 #undef MAT4_DIM_SIZE
-#undef MAT4_X_DIM
-#undef MAT4_Y_DIM
-#undef MAT4_Z_DIM
-#undef MAT4_W_DIM
 
 #undef CONST_SCALE_TYPE
 #undef SCALE_TYPE
