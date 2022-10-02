@@ -55,7 +55,6 @@ constexpr T GetW(const T* vec4) {
     return vec4[kAxisW];
 }
 
-
 constexpr int GetMat4Index(const int y, const int x) {
     return y * MAT4_DIM_SIZE + x;
 }
