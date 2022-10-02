@@ -1310,18 +1310,18 @@ constexpr T* GetPtr(Matrix4<T> &m) {
 
 // Base matrix defines the type.
 template<typename T, typename V>
-inline Matrix4<T> GetLookatMat4(Matrix4<T> base, V&& eye, V&& center, V&& up) {
+inline Matrix4<T> GetLookat(Matrix4<T> base, V&& eye, V&& center, V&& up) {
     LookatMat4(GetPtr(eye), GetPtr(center), GetPtr(up), GetPtr(base));
     return base;
 }
 
 // Base matrix defines the type.
 template<typename T>
-inline Matrix4<T> GetPerspectiveMat4(Matrix4<T> base,
-                                         CONST_SCALE_TYPE fov,
-                                         CONST_SCALE_TYPE aspect,
-                                         CONST_SCALE_TYPE near,
-                                         CONST_SCALE_TYPE far) {
+inline Matrix4<T> GetPerspective(Matrix4<T> base,
+                                     CONST_SCALE_TYPE fov,
+                                     CONST_SCALE_TYPE aspect,
+                                     CONST_SCALE_TYPE near,
+                                     CONST_SCALE_TYPE far) {
     PerspectiveMat4(fov, aspect, near, far, GetPtr(base));
     return base;
 }
@@ -1333,6 +1333,8 @@ inline Matrix4<T> GetRotation(Matrix4<T> base, const int axis, CONST_SCALE_TYPE 
     return base;
 }
 
+
+// In matrix defines the type.
 template<typename T>
 inline Matrix4<T> Invert(Matrix4<T> &in) {
     Matrix4<T> out;
@@ -1340,6 +1342,7 @@ inline Matrix4<T> Invert(Matrix4<T> &in) {
     return out;
 }
 
+// In matrix defines the type.
 template<typename T>
 inline Matrix4<T> Invert(Matrix4<T> &&in) {
     Matrix4<T> out;
@@ -1347,6 +1350,7 @@ inline Matrix4<T> Invert(Matrix4<T> &&in) {
     return out;
 }
 
+// Base matrix defines the type.
 template<typename T, typename V>
 inline Matrix4<T> GetTranslation(Matrix4<T> base, V&& vec) {
     TranslationMat4(GetPtr(vec), GetPtr(base));
