@@ -17,7 +17,7 @@
 #define STATIC_ASSERT_TYPE(T)                                  \
 static_assert(std::is_same<T, float>::value ||                 \
                   std::is_same<T, double>::value,              \
-                  "Only support the float and double type.");
+                  "Only support for the float and double type.");
 
 #define VEC3_DIM_SIZE (3)
 #define MAT4_DIM_SIZE (4)
@@ -33,26 +33,26 @@ static constexpr int kAxisW = 3;
 // C-like functions.
 
 template<typename T>
-constexpr T GetX(const T* vec3) {
+constexpr T GetX(const T* vec) {
     STATIC_ASSERT_TYPE(T);
-    return vec3[kAxisX];
+    return vec[kAxisX];
 }
 template<typename T>
-constexpr T GetY(const T* vec3) {
+constexpr T GetY(const T* vec) {
     STATIC_ASSERT_TYPE(T);
-    return vec3[kAxisY];
-}
-
-template<typename T>
-constexpr T GetZ(const T* vec3) {
-    STATIC_ASSERT_TYPE(T);
-    return vec3[kAxisZ];
+    return vec[kAxisY];
 }
 
 template<typename T>
-constexpr T GetW(const T* vec4) {
+constexpr T GetZ(const T* vec) {
     STATIC_ASSERT_TYPE(T);
-    return vec4[kAxisW];
+    return vec[kAxisZ];
+}
+
+template<typename T>
+constexpr T GetW(const T* vec) {
+    STATIC_ASSERT_TYPE(T);
+    return vec[kAxisW];
 }
 
 constexpr int GetMat4Index(const int y, const int x) {
@@ -60,7 +60,7 @@ constexpr int GetMat4Index(const int y, const int x) {
 }
 
 constexpr int GetMat4Index(const int dim) {
-    return dim * MAT4_DIM_SIZE + dim;
+    return GetMat4Index(dim, dim);
 }
 
 template<typename T>
@@ -97,7 +97,7 @@ inline std::string Vec3ToString(const T* vec3) {
     return out.str();
 }
 
-// Convert the vector3 to std::string.
+// Convert the vector4 to std::string.
 template<typename T>
 inline std::string Vec4ToString(const T* vec4) {
     STATIC_ASSERT_TYPE(T);
@@ -161,6 +161,7 @@ inline void PrintVec3(const T* vec3) {
     std::cout << Vec3ToString(vec3) << std::endl;
 }
 
+// Print the vector4 elements.
 template<typename T>
 inline void PrintVec4(const T* vec4) {
     STATIC_ASSERT_TYPE(T);
@@ -168,6 +169,7 @@ inline void PrintVec4(const T* vec4) {
     std::cout << Vec4ToString(vec4) << std::endl;
 }
 
+// Print the matrix4 elements.
 template<typename T>
 inline void PrintMat4(const T* mat4) {
     STATIC_ASSERT_TYPE(T);
@@ -1267,6 +1269,7 @@ struct Matrix4 {
         MulMat4AndVec4(Ptr(), rhs.Ptr(), out.Ptr());
         return out;
     }
+
     // division operators
     template<typename V>
     Matrix4<T> operator/(V scale) {
@@ -1280,6 +1283,7 @@ struct Matrix4 {
         return *this;
     }
 
+private:
     S sub_vec_[4]; // 4x4
 };
 
