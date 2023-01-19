@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 int main(int argc, char **argv) {
 
     auto rot = GetTranslation(
-                   Matrix4f(),
+                   Matrix4f(),     // 輸出的矩陣型態
                    Vector3f(1,2,3) // 轉移向量
                );
 }
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
     auto rot = GetRotation(
                    Matrix4f(),
                    kAxisX, // 轉軸
-                   60.f    // 旋轉角度
+                   60.f    // 旋轉角度（degree）
                );
 }
 ```
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 int main(int argc, char **argv) {
 
     auto lookat = GetLookat(
-                      Matrix4f(),
+                      Matrix4f(),            // 輸出的矩陣型態
                       Vector3f(-1, 0, -1.4), // 攝影機位置
                       Vector3f( 0, 0, 0),    // 拍攝的位置
                       Vector3f( 5, 1, 0)     // 頭頂方向
@@ -123,11 +123,11 @@ int main(int argc, char **argv) {
 int main(int argc, char **argv) {
 
     auto Perspective = GetPerspective(
-                           Matrix4f(),
-                           45.0f, // 視角
-                           1,     // 寬高比
-                           0.1f,  // 近平面
-                           100.0f // 遠平面
+                           Matrix4f(), // 輸出的矩陣型態
+                           45.0f,      // 視角（degree）
+                           1,          // 寬高比
+                           0.1f,       // 近平面
+                           100.0f      // 遠平面
                        );
 }
 ```

@@ -14,6 +14,17 @@
 #include <type_traits>
 #include <initializer_list>
 
+#define CHECK_REF_TYPE(V)                                      \
+{                                                              \
+    if (std::is_lvalue_reference<decltype(V)>::value) {        \
+        printf("lval ref\n");                                  \
+    } else if (std::is_lvalue_reference<decltype(V)>::value) { \
+        printf("rval ref\n");                                  \
+    } else {                                                   \
+        printf("not ref\n");                                   \
+    }                                                          \
+}
+
 #define STATIC_ASSERT_TYPE(T)                                  \
 static_assert(std::is_same<T, float>::value ||                 \
                   std::is_same<T, double>::value,              \
@@ -29,6 +40,7 @@ static constexpr int kAxisX = 0;
 static constexpr int kAxisZ = 1;
 static constexpr int kAxisY = 2;
 static constexpr int kAxisW = 3;
+
 
 // C-like functions.
 
@@ -75,20 +87,26 @@ constexpr T ToDegree(const T radians) {
     return radians * (180.f / M_PI);
 }
 
+template<typename T>
+std::string FloatToString(T val) {
+    STATIC_ASSERT_TYPE(T);
+    auto out = std::ostringstream{};
+    int p = 6;
+    int w = p + 6;
+    out << std::fixed
+            << std::setw(w)
+            << std::setprecision(p)
+            << val;
+    return out.str();
+};
+
+
 // Convert the vector3 to std::string.
 template<typename T>
 inline std::string Vec3ToString(const T* vec3) {
     STATIC_ASSERT_TYPE(T);
 
     auto out = std::ostringstream{};
-    auto FloatToString = [](T val){
-        auto out = std::ostringstream{};
-        int p = 6;
-        int w = p + 6;
-        out << std::fixed << std::setw(w) << std::setprecision(p) << val;
-        return out.str();
-    };
-
     out
         << '('
         << FloatToString(GetX(vec3)) << ", "
@@ -103,14 +121,6 @@ inline std::string Vec4ToString(const T* vec4) {
     STATIC_ASSERT_TYPE(T);
 
     auto out = std::ostringstream{};
-    auto FloatToString = [](T val){
-        auto out = std::ostringstream{};
-        int p = 6;
-        int w = p + 6;
-        out << std::fixed << std::setw(w) << std::setprecision(p) << val;
-        return out.str();
-    };
-
     out
         << '('
         << FloatToString(GetX(vec4)) << ", "
@@ -127,14 +137,6 @@ inline std::string Mat4ToString(const T* mat4) {
     constexpr int N = MAT4_DIM_SIZE;
 
     auto out = std::ostringstream{};
-    auto FloatToString = [](T val){
-        auto out = std::ostringstream{};
-        int p = 6;
-        int w = p + 6;
-        out << std::fixed << std::setw(w) << std::setprecision(p) << val;
-        return out.str();
-    };
-
     out << "{\n";
     for (int i = 0; i < N; ++i) {
         const T* offset = mat4 + i * N;
@@ -801,7 +803,10 @@ inline void PerspectiveMat4(CONST_SCALE_TYPE fov,
     mat4[GetMat4Index(kAxisW, kAxisZ)] = (2*far*near)/diff;
 }
 
-template<typename T>
+template<
+    typename T,
+    typename = std::enable_if_t<std::is_floating_point<T>::value>
+>
 struct Vector4 {
     Vector4() : x(0), y(0), z(0), w(0) {}
     Vector4(T scale) : x(scale), y(scale), z(scale), w(scale) {}
@@ -813,16 +818,13 @@ struct Vector4 {
         }
     }
 
-    Vector4(const Vector4<float> &other) {
+    template<typename V>
+    Vector4(const Vector4<V> &other) {
         x = other.x; y = other.y; z = other.z; w = other.w;
     }
-    Vector4(const Vector4<float> &&other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-    Vector4(const Vector4<double> &other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-    Vector4(const Vector4<double> &&other) {
+
+    template<typename V>
+    Vector4(const Vector4<V> &&other) {
         x = other.x; y = other.y; z = other.z; w = other.w;
     }
 
@@ -845,21 +847,16 @@ struct Vector4 {
     }
 
     // assign operators
-    inline Vector4<T> &operator=(const Vector4<float> &rhs) {
+    template<typename V>
+    inline Vector4<T> &operator=(const Vector4<T>& rhs) {
         x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
         return *this;
     }
-    inline Vector4<T> &operator=(const Vector4<float> &&rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;  
-    }
-    inline Vector4<T> &operator=(const Vector4<double> &rhs) {
+
+    template<typename V>
+    inline Vector4<T> &operator=(const Vector4<V>&& rhs) {
         x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
         return *this;
-    }
-    inline Vector4<T> &operator=(const Vector4<double> &&rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;  
     }
 
     T x; // 0
@@ -868,9 +865,13 @@ struct Vector4 {
     T w; // 3
 };
 
-template<typename T>
+template<
+    typename T,
+    typename = std::enable_if_t<std::is_floating_point<T>::value>
+>
 struct Vector3 {
     Vector3() : x(0), y(0), z(0) {}
+
     Vector3(T scale) : x(scale), y(scale), z(scale) {}
     Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
     Vector3(std::initializer_list<T> list) {
@@ -880,16 +881,15 @@ struct Vector3 {
         }
     }
 
-    Vector3(const Vector3<float> &other) {
+    ~Vector3() {}
+
+    template<typename V>
+    Vector3(const Vector3<V> &other) {
         x = other.x; y = other.y; z = other.z;
     }
-    Vector3(const Vector3<float> &&other) {
-        x = other.x; y = other.y; z = other.z;
-    }
-    Vector3(const Vector3<double> &other) {
-        x = other.x; y = other.y; z = other.z;
-    }
-    Vector3(const Vector3<double> &&other) {
+
+    template<typename V>
+    Vector3(const Vector3<V> &&other) {
         x = other.x; y = other.y; z = other.z;
     }
 
@@ -916,21 +916,16 @@ struct Vector3 {
     }
 
     // assign operators
-    inline Vector3<T> &operator=(const Vector3<float> &rhs) {
+    template<typename V>
+    inline Vector3<T> &operator=(const Vector3<V>& rhs) {
         x = rhs.x; y = rhs.y; z = rhs.z;
         return *this;
     }
-    inline Vector3<T> &operator=(const Vector3<float> &&rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z;
-        return *this;  
-    }
-    inline Vector3<T> &operator=(const Vector3<double> &rhs) {
+
+    template<typename V>
+    inline Vector3<T> &operator=(const Vector3<V>&& rhs) {
         x = rhs.x; y = rhs.y; z = rhs.z;
         return *this;
-    }
-    inline Vector3<T> &operator=(const Vector3<double> &&rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z;
-        return *this;  
     }
 
     // plus operators
@@ -1057,8 +1052,13 @@ struct Vector3 {
     T z; // 2
 };
 
-template<typename T, typename S=Vector4<T>>
+template<
+    typename T,
+    typename S = Vector4<T>,
+    typename = std::enable_if_t<std::is_floating_point<T>::value>
+>
 struct Matrix4 {
+public:
     Matrix4() {
        // all elements are zero, do nothing...
     }
@@ -1078,16 +1078,13 @@ struct Matrix4 {
         }
     }
 
-    Matrix4(const Matrix4<float> &other) {
+    template<typename V>
+    Matrix4(const Matrix4<V> &other) {
         for (int i = 0; i < 4; ++i) sub_vec_[i] = other.sub_vec_[i];
     }
-    Matrix4(const Matrix4<float> &&other) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = other.sub_vec_[i];
-    }
-    Matrix4(const Matrix4<double> &other) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = other.sub_vec_[i];
-    }
-    Matrix4(const Matrix4<double> &&other) {
+
+    template<typename V>
+    Matrix4(const Matrix4<V> &&other) {
         for (int i = 0; i < 4; ++i) sub_vec_[i] = other.sub_vec_[i];
     }
 
@@ -1098,10 +1095,10 @@ struct Matrix4 {
     inline T *Ptr() {
         return sub_vec_[0].Ptr();
     }
-    inline S& operator [](int idx) {
+    inline S& operator[](int idx) {
         return sub_vec_[idx];
     }
-    inline S operator [](int idx) const {
+    inline S operator[](int idx) const {
         return sub_vec_[idx];
     }
 
@@ -1110,21 +1107,16 @@ struct Matrix4 {
     }
 
     // assign operators
-    inline Matrix4<T> &operator=(const Matrix4<float> &rhs) {
+    template<typename V>
+    inline Matrix4<T> &operator=(const Matrix4<V> &rhs) {
         for (int i = 0; i < 4; ++i) sub_vec_[i] = rhs.sub_vec_[i];
         return *this;
     }
-    inline Matrix4<T> &operator=(const Matrix4<float> &&rhs) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = rhs.sub_vec_[i];
-        return *this;  
-    }
-    inline Matrix4<T> &operator=(const Matrix4<double> &rhs) {
+
+    template<typename V>
+    inline Matrix4<T> &operator=(const Matrix4<V> &&rhs) {
         for (int i = 0; i < 4; ++i) sub_vec_[i] = rhs.sub_vec_[i];
         return *this;
-    }
-    inline Matrix4<T> &operator=(const Matrix4<double> &&rhs) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = rhs.sub_vec_[i];
-        return *this;  
     }
 
     // plus operators
@@ -1154,6 +1146,7 @@ struct Matrix4 {
         AddMat4(Ptr(), out.Ptr(), scale);
         return out;
     }
+
     Matrix4<T> &operator+=(Matrix4<T> &rhs) {
         AddMat4(Ptr(), rhs.Ptr(), Ptr());
         return *this;
@@ -1162,6 +1155,7 @@ struct Matrix4 {
         AddMat4(Ptr(), rhs.Ptr(), Ptr());
         return *this;
     }
+
     template<typename V>
     Matrix4<T> &operator+=(V scale) {
         AddMat4(Ptr(), Ptr(), scale);
@@ -1178,23 +1172,14 @@ struct Matrix4 {
         SubMat4(Ptr(), rhs.Ptr(), rhs.Ptr());
         return rhs;
     }
-    template<typename V>
-    friend Matrix4<T> operator-(V scale, Matrix4<T> &rhs) {
-        Matrix4<T> out;
-        SubMat4(rhs.Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    template<typename V>
-    friend Matrix4<T> operator-(V scale, Matrix4<T> &&rhs) {
-        SubMat4(rhs.Ptr(), rhs.Ptr(), scale);
-        return rhs;
-    }
+
     template<typename V>
     Matrix4<T> operator-(V scale) {
         Matrix4<T> out;
         SubMat4(Ptr(), out.Ptr(), scale);
         return out;
     }
+
     Matrix4<T> &operator-=(Matrix4<T> &rhs) {
         SubMat4(Ptr(), rhs.Ptr(), Ptr());
         return *this;
@@ -1204,7 +1189,7 @@ struct Matrix4 {
         return *this;
     }
     template<typename V>
-    Matrix4<T> &operator-=(V scale) {
+    Matrix4<T> &operator-=(const V scale) {
         SubMat4(Ptr(), Ptr(), scale);
         return *this;
     }
@@ -1249,6 +1234,7 @@ struct Matrix4 {
         MulMat4(Ptr(), Ptr(), scale);
         return *this;
     }
+
     Vector3<T> operator*(Vector3<T> &rhs) {
         Vector3<T> out;
         MulMat4AndVec3(Ptr(), rhs.Ptr(), out.Ptr());
@@ -1283,7 +1269,6 @@ struct Matrix4 {
         return *this;
     }
 
-private:
     S sub_vec_[4]; // 4x4
 };
 
@@ -1291,7 +1276,7 @@ using Vector3f = Vector3<float>;
 using Vector3d = Vector3<double>;
 
 using Vector4f = Vector4<float>;
-using Vector4d = Vector4<float>;
+using Vector4d = Vector4<double>;
 
 using Matrix4f = Matrix4<float>;
 using Matrix4d = Matrix4<double>;
@@ -1312,14 +1297,37 @@ constexpr T* GetPtr(Matrix4<T> &m) {
     return m.Ptr();
 }
 
-// Base matrix defines the type.
-template<typename T, typename V>
-inline Matrix4<T> GetLookat(Matrix4<T> base, V&& eye, V&& center, V&& up) {
+// The base matrix defines the type.
+
+template<
+    typename T,
+    typename V1,
+    typename V2,
+    typename V3,
+    typename = std::enable_if_t<
+                         (
+                              std::is_same<std::remove_reference_t<V1>, Vector3<float>>::value &&
+                              std::is_same<std::remove_reference_t<V2>, Vector3<float>>::value &&
+                              std::is_same<std::remove_reference_t<V3>, Vector3<float>>::value &&
+                              std::is_same<T, float>::value
+                         ) || (
+                              std::is_same<std::remove_reference_t<V2>, Vector3<double>>::value &&
+                              std::is_same<std::remove_reference_t<V3>, Vector3<double>>::value &&
+                              std::is_same<std::remove_reference_t<V1>, Vector3<double>>::value &&
+                              std::is_same<T, double>::value
+                         )
+                       >
+>
+inline Matrix4<T> GetLookat(Matrix4<T> base,
+                                V1&& eye,
+                                V2&& center,
+                                V3&& up) {
     LookatMat4(GetPtr(eye), GetPtr(center), GetPtr(up), GetPtr(base));
     return base;
 }
 
-// Base matrix defines the type.
+
+// The base matrix defines the type.
 template<typename T>
 inline Matrix4<T> GetPerspective(Matrix4<T> base,
                                      CONST_SCALE_TYPE fov,
@@ -1330,32 +1338,44 @@ inline Matrix4<T> GetPerspective(Matrix4<T> base,
     return base;
 }
 
-// Base matrix defines the type.
+// The base matrix defines the type.
 template<typename T>
-inline Matrix4<T> GetRotation(Matrix4<T> base, const int axis, CONST_SCALE_TYPE degree) {
+inline Matrix4<T> GetRotation(Matrix4<T> base,
+                                  const int axis,
+                                  CONST_SCALE_TYPE degree) {
     RotationMat4AtAxis(GetPtr(base), axis, degree);
     return base;
 }
 
 
-// In matrix defines the type.
-template<typename T>
-inline Matrix4<T> Invert(Matrix4<T> &in) {
-    Matrix4<T> out;
+// The in matrix defines the type.
+template<
+    typename T,
+    typename = std::enable_if_t<
+                   std::is_same<std::remove_reference_t<T>, Matrix4<float>>::value ||
+                   std::is_same<std::remove_reference_t<T>, Matrix4<double>>::value
+               >
+>
+inline std::remove_reference_t<T> Invert(T&& in) {
+    std::remove_reference_t<T> out;
     InvertMat4(GetPtr(in), GetPtr(out));
     return out;
 }
 
-// In matrix defines the type.
-template<typename T>
-inline Matrix4<T> Invert(Matrix4<T> &&in) {
-    Matrix4<T> out;
-    InvertMat4(GetPtr(in), GetPtr(out));
-    return out;
-}
-
-// Base matrix defines the type.
-template<typename T, typename V>
+// The base matrix defines the type.
+template<
+    typename T,
+    typename V,
+    typename = std::enable_if_t<
+                         (
+                              std::is_same<std::remove_reference_t<V>, Vector3<float>>::value &&
+                              std::is_same<T, float>::value
+                         ) || (
+                              std::is_same<std::remove_reference_t<V>, Vector3<double>>::value &&
+                              std::is_same<T, double>::value
+                         )
+                       >
+>
 inline Matrix4<T> GetTranslation(Matrix4<T> base, V&& vec) {
     TranslationMat4(GetPtr(vec), GetPtr(base));
     return base;
