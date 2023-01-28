@@ -37,8 +37,8 @@ static_assert(std::is_same<T, float>::value ||                 \
 #define SCALE_TYPE double
 
 static constexpr int kAxisX = 0;
-static constexpr int kAxisZ = 1;
-static constexpr int kAxisY = 2;
+static constexpr int kAxisY = 1;
+static constexpr int kAxisZ = 2;
 static constexpr int kAxisW = 3;
 
 
@@ -876,7 +876,7 @@ struct Vector3 {
     Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
     Vector3(std::initializer_list<T> list) {
         T* p = Ptr();
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 3; ++i) {
             *(p+i) = *(std::begin(list) + i);
         }
     }
@@ -982,18 +982,18 @@ struct Vector3 {
     template<typename V>
     friend Vector3<T> operator-(V scale, Vector3<T> &rhs) {
         Vector3<T> out;
-        SubVec3(rhs.Ptr(), out.Ptr(), scale);
+        SubVec3(rhs.Ptr(), out.Ptr(), scale, true);
         return out;
     }
     template<typename V>
     friend Vector3<T> operator-(V scale, Vector3<T> &&rhs) {
-        SubVec3(rhs.Ptr(), rhs.Ptr(), scale);
+        SubVec3(rhs.Ptr(), rhs.Ptr(), scale, true);
         return rhs;
     }
     template<typename V>
     Vector3<T> operator-(V scale) {
         Vector3<T> out;
-        SubVec3(Ptr(), out.Ptr(), scale);
+        SubVec3(Ptr(), out.Ptr(), scale, false);
         return out;
     }
     Vector3<T> &operator-=(Vector3<T> &rhs) {
@@ -1006,7 +1006,7 @@ struct Vector3 {
     }
     template<typename V>
     Vector3<T> &operator-=(V scale) {
-        SubVec3(Ptr(), Ptr(), scale);
+        SubVec3(Ptr(), Ptr(), scale, false);
         return *this;
     }
 
@@ -1176,7 +1176,7 @@ public:
     template<typename V>
     Matrix4<T> operator-(V scale) {
         Matrix4<T> out;
-        SubMat4(Ptr(), out.Ptr(), scale);
+        SubMat4(Ptr(), out.Ptr(), scale, false);
         return out;
     }
 
@@ -1190,7 +1190,7 @@ public:
     }
     template<typename V>
     Matrix4<T> &operator-=(const V scale) {
-        SubMat4(Ptr(), Ptr(), scale);
+        SubMat4(Ptr(), Ptr(), scale, false);
         return *this;
     }
 
