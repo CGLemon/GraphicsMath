@@ -1,14 +1,12 @@
 # Graphics Math
 
-一個 head-only 的計算機圖學數學庫，無須任何第三方的庫。
+一個 head-only 的計算機圖學數學庫，實做了一些常用功能，無須任何第三方的庫。
 
 ## 需求
 
 支援 C++14 或以上的編譯器。
 
 ## 基本使用
-
-Vector3 是由 x、y、z 三個數值組合而成的向量，Vector4  是 x、y、z、w 四個數值。
 
 ```cpp
 int main(int argc, char **argv) {
@@ -18,10 +16,9 @@ int main(int argc, char **argv) {
     a += Vector3f(7,8,9); // 和其它 Vector3 相加
 
     std::cout << a.ToString() << std::endl; // 顯示 Vector3 的值
-    std::cout << a.ToVec4().ToString() << std::endl; // 顯示 Vector4 的值
 
 
-    float *ptr = a.Ptr(); // 獲得指針
+    float *ptr = a.GetPtr(); // 獲得指針
 
     return 0;
 }
@@ -29,31 +26,27 @@ int main(int argc, char **argv) {
 
 <br>
 
-Matrix4 是由四個 Vector4 組合而成的矩陣。
 
 ```cpp
 int main(int argc, char **argv) {
 
-    Matrix4f a(8); // 宣告 float 的 Matrix4
+    // 宣告 float 的 Matrix4，對角線的
+    Matrix4f a(8);
 
     Matrix4f b = {
-        {1,2,3,4},
-        {5,6,7,8},
-        {9,10,11,12},
-        {13,14,15,16},
+        1, 2, 3, 4,
+        5, 6, 7, 8,
+        9, 10,11,12,
+        13,14,15,16,
     };
 
-
     Matrix4f c = a * b; // a 和 b 做矩陣相乘
-    std::cout << c.ToString() << std::endl; // 顯示 Matrix4 的值
-
-    float *ptr = c.Ptr(); // 獲得指針
-
+    std::cout << c << std::endl; // 顯示 Matrix4 的值
     return 0;
 }
 ```
 
-## 常用矩陣
+## 常用的圖學矩陣
 
 #### 單位矩陣
 
@@ -72,18 +65,16 @@ int main(int argc, char **argv) {
 
     Matrix4f mat4(1);
 
-    auto invert = Invert(mat4);
+    auto invert = mat4.Invert();
 }
 ```
-
 
 #### 轉移矩陣
 
 ```cpp
 int main(int argc, char **argv) {
 
-    auto rot = GetTranslation(
-                   Matrix4f(),     // 輸出的矩陣型態
+    auto rot = Matrix4f::GetTranslation(
                    Vector3f(1,2,3) // 轉移向量
                );
 }
@@ -95,8 +86,7 @@ int main(int argc, char **argv) {
 ```cpp
 int main(int argc, char **argv) {
 
-    auto rot = GetRotation(
-                   Matrix4f(),
+    auto rot = Matrix4f::GetRotation(
                    kAxisX, // 轉軸
                    60.f    // 旋轉角度（degree）
                );
@@ -108,8 +98,7 @@ int main(int argc, char **argv) {
 ```cpp
 int main(int argc, char **argv) {
 
-    auto lookat = GetLookat(
-                      Matrix4f(),            // 輸出的矩陣型態
+    auto lookat = Matrix4f::GetLookat(
                       Vector3f(-1, 0, -1.4), // 攝影機位置
                       Vector3f( 0, 0, 0),    // 拍攝的位置
                       Vector3f( 5, 1, 0)     // 頭頂方向
@@ -122,8 +111,7 @@ int main(int argc, char **argv) {
 ```cpp
 int main(int argc, char **argv) {
 
-    auto Perspective = GetPerspective(
-                           Matrix4f(), // 輸出的矩陣型態
+    auto Perspective = Matrix4f::GetPerspective(
                            45.0f,      // 視角（degree）
                            1,          // 寬高比
                            0.1f,       // 近平面

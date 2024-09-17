@@ -1,5 +1,4 @@
-#ifndef GRAPHICS_MATH_H_INCLUDE
-#define GRAPHICS_MATH_H_INCLUDE
+#pragma
 
 #define _USE_MATH_DEFINES // for math.h
 
@@ -11,554 +10,287 @@
 #include <sstream>
 #include <cmath>
 #include <cstdlib>
+#include <cstdint>
 #include <type_traits>
 #include <initializer_list>
 
-#define CHECK_REF_TYPE(V)                                      \
-{                                                              \
-    if (std::is_lvalue_reference<decltype(V)>::value) {        \
-        printf("lval ref\n");                                  \
-    } else if (std::is_lvalue_reference<decltype(V)>::value) { \
-        printf("rval ref\n");                                  \
-    } else {                                                   \
-        printf("not ref\n");                                   \
-    }                                                          \
-}
+#define FOREACH_LOOP(N)    \
+    do {                   \
+        size_t i = 0;      \
+        for (; i < N; ++i) \
 
-#define STATIC_ASSERT_TYPE(T)                                  \
-static_assert(std::is_same<T, float>::value ||                 \
-                  std::is_same<T, double>::value,              \
-                  "Only support for the float and double type.");
-
-#define VEC3_DIM_SIZE (3)
-#define MAT4_DIM_SIZE (4)
+#define FOREACH_LOOP_END   \
+    } while (0)
 
 #define CONST_SCALE_TYPE const double
 #define SCALE_TYPE double
+
+#define IS_NUMBER(T) \
+    (std::is_floating_point<T>::value || std::is_integral<T>::value)
+#define IS_SAME(T, U) \
+    std::is_same<T, typename std::remove_reference<U>::type>::value
+#define IS_BASE_OF(T, U) \
+    std::is_base_of<T, typename std::remove_reference<U>::type>::value
+
+// C-like functions
 
 static constexpr int kAxisX = 0;
 static constexpr int kAxisY = 1;
 static constexpr int kAxisZ = 2;
 static constexpr int kAxisW = 3;
 
-
-// C-like functions.
-
-template<typename T>
-constexpr T GetX(const T* vec) {
-    STATIC_ASSERT_TYPE(T);
-    return vec[kAxisX];
-}
-template<typename T>
-constexpr T GetY(const T* vec) {
-    STATIC_ASSERT_TYPE(T);
-    return vec[kAxisY];
-}
-
-template<typename T>
-constexpr T GetZ(const T* vec) {
-    STATIC_ASSERT_TYPE(T);
-    return vec[kAxisZ];
-}
-
-template<typename T>
-constexpr T GetW(const T* vec) {
-    STATIC_ASSERT_TYPE(T);
-    return vec[kAxisW];
-}
-
-constexpr int GetMat4Index(const int y, const int x) {
-    return y * MAT4_DIM_SIZE + x;
-}
-
-constexpr int GetMat4Index(const int dim) {
-    return GetMat4Index(dim, dim);
-}
-
-template<typename T>
-constexpr T ToRadians(const T degree) {
-    STATIC_ASSERT_TYPE(T);
-    return degree * (M_PI / 180.f);
-}
-
-template<typename T>
-constexpr T ToDegree(const T radians) {
-    STATIC_ASSERT_TYPE(T);
-    return radians * (180.f / M_PI);
-}
-
-template<typename T>
-std::string FloatToString(T val) {
-    STATIC_ASSERT_TYPE(T);
+// Print a format number.
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+std::string ScaleToString(T scale) {
     auto out = std::ostringstream{};
     int p = 6;
     int w = p + 6;
     out << std::fixed
             << std::setw(w)
             << std::setprecision(p)
-            << val;
+            << scale;
     return out.str();
 };
 
-
-// Convert the vector3 to std::string.
-template<typename T>
-inline std::string Vec3ToString(const T* vec3) {
-    STATIC_ASSERT_TYPE(T);
-
+// Convert the vector-N to std::string.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+inline std::string VecorNToString(const T* vec) {
     auto out = std::ostringstream{};
-    out
-        << '('
-        << FloatToString(GetX(vec3)) << ", "
-        << FloatToString(GetY(vec3)) << ", "
-        << FloatToString(GetZ(vec3)) << ")";
+    out << '(';
+
+    FOREACH_LOOP(N) {
+        out << ScaleToString(vec[i])
+                << (i != N-1 ? ", " : ")");
+    } FOREACH_LOOP_END;
+
     return out.str();
 }
 
-// Convert the vector4 to std::string.
-template<typename T>
-inline std::string Vec4ToString(const T* vec4) {
-    STATIC_ASSERT_TYPE(T);
-
-    auto out = std::ostringstream{};
-    out
-        << '('
-        << FloatToString(GetX(vec4)) << ", "
-        << FloatToString(GetY(vec4)) << ", "
-        << FloatToString(GetZ(vec4)) << ", "
-        << FloatToString(GetW(vec4)) << ")";
-    return out.str();
+// Print the vector-N elements.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+inline void PrintVectorN(const T* vec) {
+    std::cout << VecorNToString<N>(vec) << std::endl;
 }
 
-// Convert the matrix4 to std::string.
-template<typename T>
-inline std::string Mat4ToString(const T* mat4) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
+// Convert the matrix-N to std::string.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+inline std::string MatrixNToString(const T* mat) {
     auto out = std::ostringstream{};
-    out << "{\n";
     for (int i = 0; i < N; ++i) {
-        const T* offset = mat4 + i * N;
-        out
-            << "  ("
-            << FloatToString(offset[kAxisX]) << ", "
-            << FloatToString(offset[kAxisY]) << ", "
-            << FloatToString(offset[kAxisZ]) << ", "
-            << FloatToString(offset[kAxisW]) << ")";
+        if (i == 0) {
+            out << "{ ";
+        } else {
+            out << "  ";
+        }
+
+        const T* offset = mat + i * N;
+        out << VecorNToString<N>(offset);
         if (i != N-1) {
             out << "\n";
         }
     }
-    out << "\n}";
+    out << " }";
     return out.str();
 }
 
-
-// Print the vector3 elements.
-template<typename T>
-inline void PrintVec3(const T* vec3) {
-    STATIC_ASSERT_TYPE(T);
-
-    std::cout << Vec3ToString(vec3) << std::endl;
+// Print the matrix-N elements.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+inline void PrintMatrixN(const T* mat) {
+    std::cout << MatrixNToString<N>(mat) << std::endl;
 }
 
-// Print the vector4 elements.
-template<typename T>
-inline void PrintVec4(const T* vec4) {
-    STATIC_ASSERT_TYPE(T);
-
-    std::cout << Vec4ToString(vec4) << std::endl;
+template<size_t N, typename T>
+constexpr T GetMatrixNIndex(T x, T y) {
+    return y * N + x;
 }
 
-// Print the matrix4 elements.
-template<typename T>
-inline void PrintMat4(const T* mat4) {
-    STATIC_ASSERT_TYPE(T);
-
-    std::cout << Mat4ToString(mat4) << std::endl;
+template<size_t N, typename T>
+constexpr T GetMatrixNIndex(T dim) {
+    return GetMatrixNIndex<N>(dim, dim);
 }
 
-// Fill the vector3.
-template<typename T>
-inline void FillVec3(T* vec3, CONST_SCALE_TYPE scale) {
-    STATIC_ASSERT_TYPE(T);
-
-    vec3[kAxisX] =
-        vec3[kAxisY] =
-        vec3[kAxisZ] =
-        scale;
+// Fill the vector-N as same element, [out vec] = scale.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void FillVectorN(T* vec, CONST_SCALE_TYPE scale) {
+    FOREACH_LOOP(N) { vec[i] = scale; } FOREACH_LOOP_END;
 }
 
-// The vector3 addition operation, [out vec] = [left vec] + [right vec].
-template<typename T>
-inline void AddVec3(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-
-    out[kAxisX] = lhs[kAxisX] + rhs[kAxisX];
-    out[kAxisY] = lhs[kAxisY] + rhs[kAxisY];
-    out[kAxisZ] = lhs[kAxisZ] + rhs[kAxisZ];
+// Fill the vector-N, [out vec] = [in vec].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void FillVectorN(const T* in, T* out) {
+    FOREACH_LOOP(N) { out[i] = in[i]; } FOREACH_LOOP_END;
 }
 
-// The vector3 and scale addition operation, [out vec] = [in vec] + scale.
-template<typename T>
-inline void AddVec3(const T* in, T* out, CONST_SCALE_TYPE scale) {
-    STATIC_ASSERT_TYPE(T);
-
-    out[kAxisX] = in[kAxisX] + scale;
-    out[kAxisY] = in[kAxisY] + scale;
-    out[kAxisZ] = in[kAxisZ] + scale;
+// The vector-N addition operation, [out vec] = [left vec] + [right vec].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void AddVectorN(const T* lhs, const T* rhs, T* out) {
+    FOREACH_LOOP(N) { out[i] = lhs[i] + rhs[i]; } FOREACH_LOOP_END;
 }
 
-// The vector3 subtraction operation, [out vec] = [left vec] - [right vec].
-template<typename T>
-inline void SubVec3(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-
-    out[kAxisX] = lhs[kAxisX] - rhs[kAxisX];
-    out[kAxisY] = lhs[kAxisY] - rhs[kAxisY];
-    out[kAxisZ] = lhs[kAxisZ] - rhs[kAxisZ];
+// The vector-N addition operation, [out vec] = [in vec] + scale.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void AddVectorN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+    FOREACH_LOOP(N) { out[i] = in[i] + scale; } FOREACH_LOOP_END;
 }
 
-// The vector3 and scale subtraction operation, 
+// The vector-N subtraction operation, [out vec] = [left vec] - [right vec].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void SubVectorN(const T* lhs, const T* rhs, T* out) {
+    FOREACH_LOOP(N) { out[i] = lhs[i] - rhs[i]; } FOREACH_LOOP_END;
+}
+
+// The vector-N and scale subtraction operation,
 //     [out vec] = [in vec] - scale,    if not invert.
 //     [out vec] =    scale - [in vec], if invert.
-template<typename T>
-inline void SubVec3(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
-    STATIC_ASSERT_TYPE(T);
-
-    if (!invert) {
-        out[kAxisX] = in[kAxisX] - scale;
-        out[kAxisY] = in[kAxisY] - scale;
-        out[kAxisZ] = in[kAxisZ] - scale;
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void SubVectorN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+    if (invert) {
+        FOREACH_LOOP(N) { out[i] = scale - in[i]; } FOREACH_LOOP_END;
     } else {
-        out[kAxisX] = scale - in[kAxisX];
-        out[kAxisY] = scale - in[kAxisY];
-        out[kAxisZ] = scale - in[kAxisZ];
+        FOREACH_LOOP(N) { out[i] = in[i] - scale; } FOREACH_LOOP_END;
     }
 }
 
-// The vector3 multiplication operation, [out vec] = [left vec] x [right vec].
-template<typename T>
-inline void MulVec3(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-
-    out[kAxisX] = lhs[kAxisX] * rhs[kAxisX];
-    out[kAxisY] = lhs[kAxisY] * rhs[kAxisY];
-    out[kAxisZ] = lhs[kAxisZ] * rhs[kAxisZ];
+// The vector-N multiplication operation, [out vec] = [left vec] x [right vec].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void MulVectorN(const T* lhs, const T* rhs, T* out) {
+    FOREACH_LOOP(N) { out[i] = lhs[i] * rhs[i]; } FOREACH_LOOP_END;
 }
 
-// The vector3 multiplication operation, [out vec] = [in vec] x scale.
-template<typename T>
-inline void MulVec3(const T* in, T* out, CONST_SCALE_TYPE scale) {
-    STATIC_ASSERT_TYPE(T);
-
-    out[kAxisX] = in[kAxisX] * scale;
-    out[kAxisY] = in[kAxisY] * scale;
-    out[kAxisZ] = in[kAxisZ] * scale;
+// The vector-N multiplication operation, [in vec] = [in vec] * scale.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void MulVectorN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+    FOREACH_LOOP(N) { out[i] = in[i] * scale; } FOREACH_LOOP_END;
 }
 
-// The vector3 division operation, [out vec] = [left vec] / [right vec].
+// The vector-N division operation, [out vec] = [left vec] / [right vec].
 // This operation is not common.
-template<typename T>
-inline void DivVec3(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-
-    out[kAxisX] = lhs[kAxisX] / rhs[kAxisX];
-    out[kAxisY] = lhs[kAxisY] / rhs[kAxisY];
-    out[kAxisZ] = lhs[kAxisZ] / rhs[kAxisZ];
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void DivVectorN(const T* lhs, const T* rhs, T* out) {
+    FOREACH_LOOP(N) { out[i] = lhs[i] / rhs[i]; } FOREACH_LOOP_END;
 }
 
-// The vector3 and scale division operation, 
+// The vector-N and scale division operation,
 //     [out vec] = [in vec] / scale,    if not invert.
 //     [out vec] =    scale / [in vec], if invert.
-template<typename T>
-inline void DivVec3(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
-    STATIC_ASSERT_TYPE(T);
-
-    if (!invert) {
-        out[kAxisX] = in[kAxisX] / scale;
-        out[kAxisY] = in[kAxisY] / scale;
-        out[kAxisZ] = in[kAxisZ] / scale;
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void DivVectorN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+    if (invert) {
+        FOREACH_LOOP(N) { out[i] = scale / in[i]; } FOREACH_LOOP_END;
     } else {
-        out[kAxisX] = scale / in[kAxisX];
-        out[kAxisY] = scale / in[kAxisY];
-        out[kAxisZ] = scale / in[kAxisZ];
+        FOREACH_LOOP(N) { out[i] = in[i] / scale; } FOREACH_LOOP_END;
     }
 }
 
-// The vector3 cross product operation.
+// The vector-N cross product operation.
 // wiki: https://en.wikipedia.org/wiki/Cross_product
-template<typename T>
-inline void CrossproductVec3(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-
+template<size_t N, typename T, typename = std::enable_if_t<N == 3 && IS_NUMBER(T)>>
+constexpr void CrossProductVectorN(const T* lhs, const T* rhs, T* out) {
     out[kAxisX] = lhs[kAxisY] * rhs[kAxisZ] - lhs[kAxisZ] * rhs[kAxisY];
     out[kAxisY] = lhs[kAxisZ] * rhs[kAxisX] - lhs[kAxisX] * rhs[kAxisZ];
     out[kAxisZ] = lhs[kAxisX] * rhs[kAxisY] - lhs[kAxisY] * rhs[kAxisX];
 }
 
-// The vector3 inner product operation.
+// The vector-N inner product operation.
 // wiki: https://en.wikipedia.org/wiki/Inner_product_space
-template<typename T>
-inline T InnerproductVec3(const T* lhs, const T* rhs) {
-    STATIC_ASSERT_TYPE(T);
-
-    SCALE_TYPE val = 0.f;
-    val += lhs[kAxisX] * rhs[kAxisX];
-    val += lhs[kAxisY] * rhs[kAxisY];
-    val += lhs[kAxisZ] * rhs[kAxisZ];
-    return val;
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr T InnerProductVectorN(const T* lhs, const T* rhs) {
+    SCALE_TYPE scale = 0.;
+    FOREACH_LOOP(N) { scale += lhs[i] * rhs[i]; } FOREACH_LOOP_END;
+    return scale;
 }
 
-// The vector3 normalizing operation. It should be
+// The vector-N normalization operation. It should be
 // equal to
 //     |a| = sqrt(inner product(a, a))
 //     out = a / |a|
-template<typename T>
-inline void NormalizingVec3(const T* in, T* out) {
-    STATIC_ASSERT_TYPE(T);
-
-    SCALE_TYPE scale = 1.f/std::sqrt(InnerproductVec3(in, in));
-    out[kAxisX] *= scale;
-    out[kAxisY] *= scale;
-    out[kAxisZ] *= scale;
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void NormalizeVectorN(const T* in, T* out) {
+    MulVectorN<N>(in, out, 1.0/std::sqrt(InnerProductVectorN<N>(in, in)));
 }
 
-// The matrix4 addition operation, [out mat] = [left mat] + [right mat].
-template<typename T>
-inline void AddMat4(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
-
-        out[xx] = lhs[xx] + rhs[xx];
-        out[yy] = lhs[yy] + rhs[yy];
-        out[zz] = lhs[zz] + rhs[zz];
-        out[ww] = lhs[ww] + rhs[ww];
-    }
+// Fill the matrix-N as same element, [out vec] = scale.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void FillMatrixN(T* mat, CONST_SCALE_TYPE scale) {
+    FillVectorN<N * N>(mat, scale);
 }
 
-// The matrix4 and scale addition operation, [out mat] = [in mat] + scale.
-template<typename T>
-inline void AddMat4(const T* in, T* out, CONST_SCALE_TYPE scale) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
-
-        out[xx] = in[xx] + scale;
-        out[yy] = in[yy] + scale;
-        out[zz] = in[zz] + scale;
-        out[ww] = in[ww] + scale;
-    }
+// Fill the diagonal elements for matrix-N.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void FillDiagonalMatrixN(T* mat, CONST_SCALE_TYPE scale) {
+    FOREACH_LOOP(N) { mat[GetMatrixNIndex<N>(i)] = scale; } FOREACH_LOOP_END;
 }
 
-// The matrix4 subtraction operation, [out mat] = [left mat] - [right mat].
-template<typename T>
-inline void SubMat4(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
-
-        out[xx] = lhs[xx] - rhs[xx];
-        out[yy] = lhs[yy] - rhs[yy];
-        out[zz] = lhs[zz] - rhs[zz];
-        out[ww] = lhs[ww] - rhs[ww];
-    }
+// The matrix-N addition operation, [out mat] = [left mat] + [right mat].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void AddMatrixN(const T* lhs, const T* rhs, T* out) {
+    AddVectorN<N * N>(lhs, rhs, out);
 }
 
-// The matrix4 and scale subtraction operation, 
-//     [out vec] = [in vec] - scale,    if not invert.
-//     [out vec] =    scale - [in vec], if invert.
-template<typename T>
-inline void SubMat4(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
+// The matrix-N addition operation, [out mat] = [in mat] + scale.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void AddMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+    AddVectorN<N * N>(in, out, scale);
+}
 
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
+// The matrix-N subtraction operation, [out mat] = [left mat] - [right mat].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void SubMatrixN(const T* lhs, const T* rhs, T* out) {
+    SubVectorN<N * N>(lhs, rhs, out);
+}
 
-        if (!invert) {
-            out[xx] = in[xx] - scale;
-            out[yy] = in[yy] - scale;
-            out[zz] = in[zz] - scale;
-            out[ww] = in[ww] - scale;
-        } else {
-            out[xx] = scale - in[xx];
-            out[yy] = scale - in[yy];
-            out[zz] = scale - in[zz];
-            out[ww] = scale - in[ww];
+// The matrix-N and scale subtraction operation,
+//     [out mat] = [in mat] - scale,    if not invert.
+//     [out mat] =    scale - [in mat], if invert.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void SubMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+    SubVectorN<N * N>(in, out, scale, invert);
+}
+
+// The matrix-N multiplication operation, [out mat] = [left mat] x [right mat].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void MulMatrixN(const T* lhs, const T* rhs, T* out) {
+    for (size_t i = 0; i < N; i++) {
+        for (size_t j = 0; j < N; j++) {
+            SCALE_TYPE buf = 0.0;
+            for (size_t k = 0; k < N; ++k) {
+                buf += lhs[i * N + k] * rhs[k * N + j];
+            }
+            out[i * N + j] = buf;
         }
     }
 }
 
-// The matrix4 multiplication operation
-// wiki: https://en.wikipedia.org/wiki/Matrix_multiplication
-template<typename T>
-inline void MulMat4(const T* lhs, const T* rhs, T* out) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            CONST_SCALE_TYPE part0 = lhs[i * N + 0] * rhs[0 * N + j];
-            CONST_SCALE_TYPE part1 = lhs[i * N + 1] * rhs[1 * N + j];
-            CONST_SCALE_TYPE part2 = lhs[i * N + 2] * rhs[2 * N + j];
-            CONST_SCALE_TYPE part3 = lhs[i * N + 3] * rhs[3 * N + j];
-
-            out[i * N + j] = part0 + part1 + part2 + part3;
-        }
-    }
+// The matrix-N multiplication operation, [out mat] = [in mat] * scale.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void MulMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+    MulVectorN<N * N>(in, out, scale);
 }
 
-// The matrix4 multiplication operation, [out vec] = [in vec] x scale.
-template<typename T>
-inline void MulMat4(const T* in, T* out, CONST_SCALE_TYPE scale) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
-
-        out[xx] = in[xx] * scale;
-        out[yy] = in[yy] * scale;
-        out[zz] = in[zz] * scale;
-        out[ww] = in[ww] * scale;
-    }
+// The matrix-N division operation, [out mat] = [left mat] / [right mat].
+// This operation is not common.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void DivMatrixN(const T* lhs, const T* rhs, T* out) {
+    DivVectorN<N * N>(lhs, rhs, out);
 }
 
-// The matrix4 and vector3 multiplication operation, [out vec3] = [mat4] x [vec3].
-template<typename T>
-inline void MulMat4AndVec3(const T* mat4, const T* vec3, T* out) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = VEC3_DIM_SIZE;
-
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
-
-        SCALE_TYPE temp = 0.f; 
-        temp += mat4[xx] * vec3[kAxisX];
-        temp += mat4[yy] * vec3[kAxisY];
-        temp += mat4[zz] * vec3[kAxisZ];
-        temp += mat4[ww] * 1.f;
-
-        out[i] = temp;
-    }
+// The matrix-N and scale division operation,
+//     [out mat] = [in mat] / scale,    if not invert.
+//     [out mat] =    scale / [in mat], if invert.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void DivMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+    DivVectorN<N * N>(in, out, scale, invert);
 }
 
-// The matrix4 and vector3 multiplication operation, [out vec4] = [mat4] x [vec4].
-template<typename T>
-inline void MulMat4AndVec4(const T* mat4, const T* vec4, T* out) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
-
-        SCALE_TYPE temp = 0.f; 
-        temp += mat4[xx] * vec4[kAxisX];
-        temp += mat4[yy] * vec4[kAxisY];
-        temp += mat4[zz] * vec4[kAxisZ];
-        temp += mat4[ww] * vec4[kAxisW];
-
-        out[i] = temp;
-    }
+// Scale the model matrix-N.
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void ScaleMatrixN(const T* vec, T* mat) {
+    FOREACH_LOOP(N-1) { mat[GetMatrixNIndex<4>(i)] *= vec[i]; } FOREACH_LOOP_END;
 }
 
-// The matrix4 and scale division operation, 
-//     [out vec] = [in vec] / scale,    if not invert.
-//     [out vec] =    scale / [in vec], if invert.
-template<typename T>
-inline void DivMat4(const T* in, T* out, CONST_SCALE_TYPE scale, bool invert) {
-    STATIC_ASSERT_TYPE(T);
-    constexpr int N = MAT4_DIM_SIZE;
-
-    for (int i = 0; i < N; ++i) {
-        const int xx = GetMat4Index(i, kAxisX);
-        const int yy = GetMat4Index(i, kAxisY);
-        const int zz = GetMat4Index(i, kAxisZ);
-        const int ww = GetMat4Index(i, kAxisW);
-
-        if (!invert) {
-            out[xx] = in[xx] / scale;
-            out[yy] = in[yy] / scale;
-            out[zz] = in[zz] / scale;
-            out[ww] = in[ww] / scale;
-        } else {
-            out[xx] = scale / in[xx];
-            out[yy] = scale / in[yy];
-            out[zz] = scale / in[zz];
-            out[ww] = scale / in[ww];
-        }
-    }
-}
-
-// Fill the all elements for matrix4.
-template<typename T>
-inline void FillMat4(T* mat4, CONST_SCALE_TYPE scale) {
-    STATIC_ASSERT_TYPE(T);
-
-    mat4[0] =  mat4[1] =  mat4[2] =  mat4[3] =
-    mat4[4] =  mat4[5] =  mat4[6] =  mat4[7] =
-    mat4[8] =  mat4[9] =  mat4[10] = mat4[11] =
-    mat4[12] = mat4[13] = mat4[14] = mat4[15] = scale;
-}
-
-// Fill the diagonal elements for matrix4.
-template<typename T>
-inline void FillDiagonalMat4(T* mat4, CONST_SCALE_TYPE scale, bool clear) {
-    STATIC_ASSERT_TYPE(T);
-
-    if (clear) {
-        FillMat4(mat4, 0.0f); // clear
-    }
-
-    mat4[GetMat4Index(kAxisX)] = scale;
-    mat4[GetMat4Index(kAxisY)] = scale;
-    mat4[GetMat4Index(kAxisZ)] = scale;
-    mat4[GetMat4Index(kAxisW)] = scale;
-}
-
-// Fill the identity matrix4.
-template<typename T>
-inline void FillIdentityMat4(T* mat4, bool clear) {
-    STATIC_ASSERT_TYPE(T);
-
-    FillDiagonalMat4(mat4, 1.0f, clear);
-}
-
-// Fast compute the inverse of the 4x4 matrix.
-template<typename T>
-inline void InvertMat4(const T* mat4, T* inv4) {
-    STATIC_ASSERT_TYPE(T);
-
+// Invert operator function, only for matrix-4.
+template<size_t N, typename T, typename = std::enable_if_t<N == 4 && IS_NUMBER(T)>>
+constexpr void InvertMatrixN(const T* mat4, T* inv4) {
     inv4[0] = mat4[5]  * mat4[10] * mat4[15] -
               mat4[5]  * mat4[11] * mat4[14] -
               mat4[9]  * mat4[6]  * mat4[15] +
@@ -675,37 +407,47 @@ inline void InvertMat4(const T* mat4, T* inv4) {
                          mat4[1] * inv4[4] +
                          mat4[2] * inv4[8] +
                          mat4[3] * inv4[12];
-    det = 1.0f / det;
+    det = 1.0 / det;
 
     for (int i = 0; i < 16; i++) {
         inv4[i] *= det;
     }
 }
 
-template<typename T>
-inline void TranslationMat4(const T *vec3, T* mat4) {
-    STATIC_ASSERT_TYPE(T);
-
-    FillIdentityMat4(mat4, true);
-
-    mat4[GetMat4Index(kAxisX, kAxisW)] = vec3[kAxisX];
-    mat4[GetMat4Index(kAxisY, kAxisW)] = vec3[kAxisY];
-    mat4[GetMat4Index(kAxisZ, kAxisW)] = vec3[kAxisZ];
+// Common model matrix, only for matrix-4.
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void TranslationMatrix4(const T* vec3, T* mat4) {
+    FillMatrixN<4>(mat4, 0);
+    FillDiagonalMatrixN<4>(mat4, 1);
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisW)] = vec3[kAxisX];
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisW)] = vec3[kAxisY];
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisW)] = vec3[kAxisZ];
 }
 
-template<typename T>
-inline void RotationMat4AtAxis(T* mat4, const int axis, CONST_SCALE_TYPE degree) {
-    STATIC_ASSERT_TYPE(T);
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr T ToRadians(const T degree) {
+    return degree * (M_PI / 180.0);
+}
+
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr T ToDegree(const T radians) {
+    return radians * (180.0 / M_PI);
+}
+
+// Common model matrix, only for matrix-4.
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void RotationMatrix4AtAxis(T* mat4, const int axis, CONST_SCALE_TYPE degree) {
     CONST_SCALE_TYPE radians = ToRadians(degree);
 
-    FillIdentityMat4(mat4, true);
+    FillMatrixN<4>(mat4, 0);
+    FillDiagonalMatrixN<4>(mat4, 1);
 
     if (axis == kAxisW) {
         return;
     }
 
     SCALE_TYPE vec3[3] = {0};
-    vec3[(int)axis] = 1.f;
+    vec3[axis] = 1.0;
 
     CONST_SCALE_TYPE rx = -vec3[kAxisX];
     CONST_SCALE_TYPE ry = -vec3[kAxisY];
@@ -715,54 +457,56 @@ inline void RotationMat4AtAxis(T* mat4, const int axis, CONST_SCALE_TYPE degree)
     CONST_SCALE_TYPE sin_v = std::sin(radians);
 
     // x
-    mat4[GetMat4Index(kAxisX, kAxisX)] =       1 * cos_v     + rx * rx * (1-cos_v);
-    mat4[GetMat4Index(kAxisX, kAxisY)] = rx * ry * (1-cos_v) -      rz * sin_v;
-    mat4[GetMat4Index(kAxisX, kAxisZ)] = rx * rz * (1-cos_v) +      ry * sin_v;
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisX)] =       1 * cos_v     + rx * rx * (1-cos_v);
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisY)] = rx * ry * (1-cos_v) -      rz * sin_v;
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisZ)] = rx * rz * (1-cos_v) +      ry * sin_v;
 
     // y
-    mat4[GetMat4Index(kAxisY, kAxisX)] = ry * rx * (1-cos_v) +      rz * sin_v;
-    mat4[GetMat4Index(kAxisY, kAxisY)] =       1 * cos_v     + ry * ry * (1-cos_v);
-    mat4[GetMat4Index(kAxisY, kAxisZ)] = ry * rz * (1-cos_v) -      rx * sin_v;
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisX)] = ry * rx * (1-cos_v) +      rz * sin_v;
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisY)] =       1 * cos_v     + ry * ry * (1-cos_v);
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisZ)] = ry * rz * (1-cos_v) -      rx * sin_v;
 
     // z
-    mat4[GetMat4Index(kAxisZ, kAxisX)] = rz * rx * (1-cos_v) -      ry * sin_v;
-    mat4[GetMat4Index(kAxisZ, kAxisY)] = rz * ry * (1-cos_v) +      rx * sin_v;
-    mat4[GetMat4Index(kAxisZ, kAxisZ)] =       1 * cos_v     + rz * rz * (1-cos_v);
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisX)] = rz * rx * (1-cos_v) -      ry * sin_v;
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisY)] = rz * ry * (1-cos_v) +      rx * sin_v;
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisZ)] =       1 * cos_v     + rz * rz * (1-cos_v);
 }
 
-// Compute the look-at matrix.
-template<typename T>
-inline void LookatMat4(const T* eye, const T* center, const T* up, T* mat4) {
-    STATIC_ASSERT_TYPE(T);
 
+// Common view matrix, only for matrix-4.
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void LookatMatrix4(const T* eye,
+                             const T* center,
+                             const T* up,
+                             T* mat4) {
     T* main_buf = (T*)std::malloc(sizeof(T) * 3 * 3);
     T* buf_x = main_buf + 0;
     T* buf_y = main_buf + 3;
     T* buf_z = main_buf + 6;
 
-    SubVec3(eye, center, buf_z);   // buf_z = eye - center
-    NormalizingVec3(buf_z, buf_z); // buf_z = norm(buf_z)
+    SubVectorN<3>(eye, center, buf_z); // buf_z = eye - center
+    NormalizeVectorN<3>(buf_z, buf_z); // buf_z = norm(buf_z)
 
-    CrossproductVec3(up,    buf_z, buf_x); // buf_x = cross(up,    buf_z)
-    CrossproductVec3(buf_z, buf_x, buf_y); // buf_y = cross(buf_z, buf_x)
+    CrossProductVectorN<3>(up,    buf_z, buf_x); // buf_x = cross(up,    buf_z)
+    CrossProductVectorN<3>(buf_z, buf_x, buf_y); // buf_y = cross(buf_z, buf_x)
 
-    NormalizingVec3(buf_x, buf_x); // buf_x = norm(buf_x)
-    NormalizingVec3(buf_y, buf_y); // buf_y = norm(buf_y)
+    NormalizeVectorN<3>(buf_x, buf_x); // buf_x = norm(buf_x)
+    NormalizeVectorN<3>(buf_y, buf_y); // buf_y = norm(buf_y)
 
     // x
-    mat4[GetMat4Index(kAxisX, kAxisX)] = buf_x[kAxisX];
-    mat4[GetMat4Index(kAxisX, kAxisY)] = buf_y[kAxisX];
-    mat4[GetMat4Index(kAxisX, kAxisZ)] = buf_z[kAxisX];
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisX)] = buf_x[kAxisX];
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisY)] = buf_y[kAxisX];
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisZ)] = buf_z[kAxisX];
 
     // y
-    mat4[GetMat4Index(kAxisY, kAxisX)] = buf_x[kAxisY];
-    mat4[GetMat4Index(kAxisY, kAxisY)] = buf_y[kAxisY];
-    mat4[GetMat4Index(kAxisY, kAxisZ)] = buf_z[kAxisY];
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisX)] = buf_x[kAxisY];
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisY)] = buf_y[kAxisY];
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisZ)] = buf_z[kAxisY];
 
     // z
-    mat4[GetMat4Index(kAxisZ, kAxisX)] = buf_x[kAxisZ];
-    mat4[GetMat4Index(kAxisZ, kAxisY)] = buf_y[kAxisZ];
-    mat4[GetMat4Index(kAxisZ, kAxisZ)] = buf_z[kAxisZ];
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisX)] = buf_x[kAxisZ];
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisY)] = buf_y[kAxisZ];
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisZ)] = buf_z[kAxisZ];
 
     // all vecs
     for (int i = 0; i < 9; ++i) {
@@ -770,623 +514,614 @@ inline void LookatMat4(const T* eye, const T* center, const T* up, T* mat4) {
     }
 
     // w
-    mat4[GetMat4Index(kAxisW, kAxisX)] = InnerproductVec3(buf_x, eye);
-    mat4[GetMat4Index(kAxisW, kAxisY)] = InnerproductVec3(buf_y, eye);
-    mat4[GetMat4Index(kAxisW, kAxisZ)] = InnerproductVec3(buf_z, eye);
+    mat4[GetMatrixNIndex<4>(kAxisW, kAxisX)] = InnerProductVectorN<3>(buf_x, eye);
+    mat4[GetMatrixNIndex<4>(kAxisW, kAxisY)] = InnerProductVectorN<3>(buf_y, eye);
+    mat4[GetMatrixNIndex<4>(kAxisW, kAxisZ)] = InnerProductVectorN<3>(buf_z, eye);
 
-    mat4[GetMat4Index(kAxisX, kAxisW)] = 0.f;
-    mat4[GetMat4Index(kAxisY, kAxisW)] = 0.f;
-    mat4[GetMat4Index(kAxisZ, kAxisW)] = 0.f;
-    mat4[GetMat4Index(kAxisW, kAxisW)] = 1.f;
+    mat4[GetMatrixNIndex<4>(kAxisX, kAxisW)] = 0.0;
+    mat4[GetMatrixNIndex<4>(kAxisY, kAxisW)] = 0.0;
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisW)] = 0.0;
+    mat4[GetMatrixNIndex<4>(kAxisW, kAxisW)] = 1.0;
 
     free(main_buf);
 }
 
-// Compute the perspective matrix.
-template<typename T>
-inline void PerspectiveMat4(CONST_SCALE_TYPE fov,
-                                CONST_SCALE_TYPE aspect,
-                                CONST_SCALE_TYPE near,
-                                CONST_SCALE_TYPE far,
-                                T *mat4) {
-    CONST_SCALE_TYPE scale_y = 1.f / std::tan(ToRadians(fov) / 2.f);
+
+// Common perspective matrix, only for matrix-4.
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void PerspectiveMatrix4(T* mat4,
+                                  CONST_SCALE_TYPE fov,
+                                  CONST_SCALE_TYPE aspect,
+                                  CONST_SCALE_TYPE near,
+                                  CONST_SCALE_TYPE far) {
+    CONST_SCALE_TYPE scale_y = 1.0 / std::tan(ToRadians(fov) / 2.0);
     CONST_SCALE_TYPE scale_x = scale_y / aspect;
     CONST_SCALE_TYPE diff    = near - far;
 
-    FillMat4(mat4, 0.0f); // clear
+    FillMatrixN<4>(mat4, 0.0); // clear
 
-    mat4[GetMat4Index(kAxisX)] = scale_x;
-    mat4[GetMat4Index(kAxisY)] = scale_y;
-    mat4[GetMat4Index(kAxisZ)] = (near + far)/diff;
+    mat4[GetMatrixNIndex<4>(kAxisX)] = scale_x;
+    mat4[GetMatrixNIndex<4>(kAxisY)] = scale_y;
+    mat4[GetMatrixNIndex<4>(kAxisZ)] = (near + far)/diff;
 
-    mat4[GetMat4Index(kAxisZ, kAxisW)] = -1.f;
-    mat4[GetMat4Index(kAxisW, kAxisZ)] = (2*far*near)/diff;
+    mat4[GetMatrixNIndex<4>(kAxisZ, kAxisW)] = -1.0;
+    mat4[GetMatrixNIndex<4>(kAxisW, kAxisZ)] = (2*far*near)/diff;
 }
 
-template<
-    typename T,
-    typename = std::enable_if_t<std::is_floating_point<T>::value>
->
-struct Vector4 {
-    Vector4() : x(0), y(0), z(0), w(0) {}
-    Vector4(T scale) : x(scale), y(scale), z(scale), w(scale) {}
-    Vector4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
-    Vector4(std::initializer_list<T> list) {
-        T* p = Ptr();
-        for (int i = 0; i < 4; ++i) {
-            *(p+i) = *(std::begin(list) + i);
-        }
-    }
+// basic buffer type
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class ElementBuffer : public std::array<T, N> {};
 
-    template<typename V>
-    Vector4(const Vector4<V> &other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-
-    template<typename V>
-    Vector4(const Vector4<V> &&other) {
-        x = other.x; y = other.y; z = other.z; w = other.w;
-    }
-
-    inline T *GetPtr() {
-        // same as Ptr()
-        return (T*)(this);
-    }
-    inline T *Ptr() {
-        return (T*)(this);
-    }
-    inline T& operator [](int idx) {
-        return Ptr()[idx];
-    }
-    inline T operator [](int idx) const {
-        return Ptr()[idx];
-    }
-
-    std::string ToString() {
-        return Vec4ToString(Ptr());
-    }
-
-    // assign operators
-    template<typename V>
-    inline Vector4<T> &operator=(const Vector4<T>& rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;
-    }
-
-    template<typename V>
-    inline Vector4<T> &operator=(const Vector4<V>&& rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
-        return *this;
-    }
-
-    T x; // 0
-    T y; // 1
-    T z; // 2
-    T w; // 3
-};
-
-template<
-    typename T,
-    typename = std::enable_if_t<std::is_floating_point<T>::value>
->
-struct Vector3 {
-    Vector3() : x(0), y(0), z(0) {}
-
-    Vector3(T scale) : x(scale), y(scale), z(scale) {}
-    Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
-    Vector3(std::initializer_list<T> list) {
-        T* p = Ptr();
-        for (int i = 0; i < 3; ++i) {
-            *(p+i) = *(std::begin(list) + i);
-        }
-    }
-
-    ~Vector3() {}
-
-    template<typename V>
-    Vector3(const Vector3<V> &other) {
-        x = other.x; y = other.y; z = other.z;
-    }
-
-    template<typename V>
-    Vector3(const Vector3<V> &&other) {
-        x = other.x; y = other.y; z = other.z;
-    }
-
-    inline T *GetPtr() {
-        // same as Ptr()
-        return (T*)(this);
-    }
-    inline T *Ptr() {
-        return (T*)(this);
-    }
-    inline T& operator [](int idx) {
-        return Ptr()[idx];
-    }
-    inline T operator [](int idx) const {
-        return Ptr()[idx];
-    }
-
-    std::string ToString() {
-        return Vec3ToString(Ptr());
-    }
-    Vector4<T> ToVec4() const {
-        Vector4<T> vec4(x,y,z,1);
-        return vec4;
-    }
-
-    // assign operators
-    template<typename V>
-    inline Vector3<T> &operator=(const Vector3<V>& rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z;
-        return *this;
-    }
-
-    template<typename V>
-    inline Vector3<T> &operator=(const Vector3<V>&& rhs) {
-        x = rhs.x; y = rhs.y; z = rhs.z;
-        return *this;
-    }
-
-    // plus operators
-    Vector3<T> operator+(Vector3<T> &rhs) {
-        Vector3<T> out;
-        AddVec3(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Vector3<T> operator+(Vector3<T> &&rhs) {
-        AddVec3(Ptr(), rhs.Ptr(), rhs.Ptr());
-        return rhs;
-    }
-    template<typename V>
-    friend Vector3<T> operator+(V scale, Vector3<T> &rhs) {
-        Vector3<T> out;
-        AddVec3(rhs.Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    template<typename V>
-    friend Vector3<T> operator+(V scale, Vector3<T> &&rhs) {
-        AddVec3(rhs.Ptr(), rhs.Ptr(), scale);
-        return rhs;
-    }
-    template<typename V>
-    Vector3<T> operator+(V scale) {
-        Vector3<T> out;
-        AddVec3(Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    Vector3<T> &operator+=(Vector3<T> &rhs) {
-        AddVec3(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    Vector3<T> &operator+=(Vector3<T> &&rhs) {
-        AddVec3(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    template<typename V>
-    Vector3<T> &operator+=(V scale) {
-        AddVec3(Ptr(), Ptr(), scale);
-        return *this;
-    }
-
-    // subtraction operators
-    Vector3<T> operator-(Vector3<T> &rhs) {
-        Vector3<T> out;
-        SubVec3(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Vector3<T> operator-(Vector3<T> &&rhs) {
-        SubVec3(Ptr(), rhs.Ptr(), rhs.Ptr());
-        return rhs;
-    }
-    template<typename V>
-    friend Vector3<T> operator-(V scale, Vector3<T> &rhs) {
-        Vector3<T> out;
-        SubVec3(rhs.Ptr(), out.Ptr(), scale, true);
-        return out;
-    }
-    template<typename V>
-    friend Vector3<T> operator-(V scale, Vector3<T> &&rhs) {
-        SubVec3(rhs.Ptr(), rhs.Ptr(), scale, true);
-        return rhs;
-    }
-    template<typename V>
-    Vector3<T> operator-(V scale) {
-        Vector3<T> out;
-        SubVec3(Ptr(), out.Ptr(), scale, false);
-        return out;
-    }
-    Vector3<T> &operator-=(Vector3<T> &rhs) {
-        SubVec3(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    Vector3<T> &operator-=(Vector3<T> &&rhs) {
-        SubVec3(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    template<typename V>
-    Vector3<T> &operator-=(V scale) {
-        SubVec3(Ptr(), Ptr(), scale, false);
-        return *this;
-    }
-
-    // multiplication operators
-    template<typename V>
-    Vector3<T> operator*(V scale) {
-        Vector3<T> out;
-        MulVec3(Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    template<typename V>
-    friend Vector3<T> operator*(V scale, Vector3<T> &rhs) {
-        Vector3<T> out;
-        MulVec3(rhs.Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    template<typename V>
-    friend Vector3<T> operator*(V scale, Vector3<T> &&rhs) {
-        MulVec3(rhs.Ptr(), rhs.Ptr(), scale);
-        return rhs;
-    }
-    template<typename V>
-    Vector3<T> &operator*=(V scale) {
-        MulVec3(Ptr(), Ptr(), scale);
-        return *this;
-    }
-
-    // division operators
-    template<typename V>
-    Vector3<T> operator/(V scale) {
-        Vector3<T> out;
-        DivVec3(Ptr(), out.Ptr(), scale, false);
-        return out;
-    }
-    template<typename V>
-    Vector3<T> &operator/=(V scale) {
-        MulVec3(Ptr(), Ptr(), scale, false);
-        return *this;
-    }
-
-    T x; // 0
-    T y; // 1
-    T z; // 2
-};
-
-template<
-    typename T,
-    typename S = Vector4<T>,
-    typename = std::enable_if_t<std::is_floating_point<T>::value>
->
-struct Matrix4 {
+// all data will be stored in the vector buffer
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class VectorBuffer : public ElementBuffer<N, T> {
 public:
-    Matrix4() {
-       // all elements are zero, do nothing...
-    }
-    Matrix4(T scale) {
-        FillDiagonalMat4(Ptr(), scale, false);
-    }
-    Matrix4(std::initializer_list<T> list) {
-        T* p = Ptr();
-        for (int i = 0; i < 16; ++i) {
-            *(p+i) = *(std::begin(list) + i);
+    VectorBuffer() = default;
+    VectorBuffer(T scale) { this->fill(scale); }
+    VectorBuffer(std::initializer_list<T> &list) {
+        const int dim = std::min(N, list.size());
+        for (int i = 0; i < dim; ++i) {
+            this->at(i) = *(std::begin(list) + i);
         }
     }
-    Matrix4(std::initializer_list<S> list) {
-        T* p = Ptr();
-        for (int i = 0; i < 4; ++i) {
-            sub_vec_[i] = *(std::begin(list) + i);
+    VectorBuffer<N, T>& operator=(const std::initializer_list<T> &list) {
+        const int dim = std::min(N, list.size());
+        for (int i = 0; i < dim; ++i) {
+            this->at(i) = *(std::begin(list) + i);
         }
-    }
-
-    template<typename V>
-    Matrix4(const Matrix4<V> &other) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = other.sub_vec_[i];
-    }
-
-    template<typename V>
-    Matrix4(const Matrix4<V> &&other) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = other.sub_vec_[i];
-    }
-
-    inline T *GetPtr() {
-        // same as Ptr()
-        return sub_vec_[0].GetPtr();
-    }
-    inline T *Ptr() {
-        return sub_vec_[0].Ptr();
-    }
-    inline S& operator[](int idx) {
-        return sub_vec_[idx];
-    }
-    inline S operator[](int idx) const {
-        return sub_vec_[idx];
-    }
-
-    std::string ToString() { 
-        return Mat4ToString(Ptr());
-    }
-
-    // assign operators
-    template<typename V>
-    inline Matrix4<T> &operator=(const Matrix4<V> &rhs) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = rhs.sub_vec_[i];
         return *this;
     }
 
-    template<typename V>
-    inline Matrix4<T> &operator=(const Matrix4<V> &&rhs) {
-        for (int i = 0; i < 4; ++i) sub_vec_[i] = rhs.sub_vec_[i];
-        return *this;
-    }
-
-    // plus operators
-    Matrix4<T> operator+(Matrix4<T> &rhs) {
-        Matrix4<T> out;
-        AddMat4(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Matrix4<T> operator+(Matrix4<T> &&rhs) {
-        AddMat4(Ptr(), rhs.Ptr(), rhs.Ptr());
-        return rhs;
-    }
-    template<typename V>
-    friend Matrix4<T> operator+(V scale, Matrix4<T> &rhs) {
-        Matrix4<T> out;
-        AddMat4(rhs.Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    template<typename V>
-    friend Matrix4<T> operator+(V scale, Matrix4<T> &&rhs) {
-        AddMat4(rhs.Ptr(), rhs.Ptr(), scale);
-        return rhs;
-    }
-    template<typename V>
-    Matrix4<T> operator+(V scale) {
-        Matrix4<T> out;
-        AddMat4(Ptr(), out.Ptr(), scale);
-        return out;
-    }
-
-    Matrix4<T> &operator+=(Matrix4<T> &rhs) {
-        AddMat4(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    Matrix4<T> &operator+=(Matrix4<T> &&rhs) {
-        AddMat4(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-
-    template<typename V>
-    Matrix4<T> &operator+=(V scale) {
-        AddMat4(Ptr(), Ptr(), scale);
-        return *this;
-    }
-
-    // subtraction operators
-    Matrix4<T> operator-(Matrix4<T> &rhs) {
-        Matrix4<T> out;
-        SubMat4(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Matrix4<T> operator-(Matrix4<T> &&rhs) {
-        SubMat4(Ptr(), rhs.Ptr(), rhs.Ptr());
-        return rhs;
-    }
-
-    template<typename V>
-    Matrix4<T> operator-(V scale) {
-        Matrix4<T> out;
-        SubMat4(Ptr(), out.Ptr(), scale, false);
-        return out;
-    }
-
-    Matrix4<T> &operator-=(Matrix4<T> &rhs) {
-        SubMat4(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    Matrix4<T> &operator-=(Matrix4<T> &&rhs) {
-        SubMat4(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    template<typename V>
-    Matrix4<T> &operator-=(const V scale) {
-        SubMat4(Ptr(), Ptr(), scale, false);
-        return *this;
-    }
-
-    // multiplication operators
-    Matrix4<T> operator*(Matrix4<T> &rhs) {
-        Matrix4<T> out;
-        MulMat4(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Matrix4<T> operator*(Matrix4<T> &&rhs) {
-        MulMat4(Ptr(), rhs.Ptr(), rhs.Ptr());
-        return rhs;
-    }
-    template<typename V>
-    Matrix4<T> operator*(V scale) {
-        Matrix4<T> out;
-        MulMat4(Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    template<typename V>
-    friend Matrix4<T> operator*(V scale, Matrix4<T> &rhs) {
-        Matrix4<T> out;
-        MulMat4(rhs.Ptr(), out.Ptr(), scale);
-        return out;
-    }
-    Matrix4<T> &operator*=(Matrix4<T> &rhs) {
-        MulMat4(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    Matrix4<T> &operator*=(Matrix4<T> &&rhs) {
-        MulMat4(Ptr(), rhs.Ptr(), Ptr());
-        return *this;
-    }
-    template<typename V>
-    friend Matrix4<T> operator*(V scale, Matrix4<T> &&rhs) {
-        MulMat4(rhs.Ptr(), rhs.Ptr(), scale);
-        return rhs;
-    }
-    template<typename V>
-    Matrix4<T> &operator*=(V scale) {
-        MulMat4(Ptr(), Ptr(), scale);
-        return *this;
-    }
-
-    Vector3<T> operator*(Vector3<T> &rhs) {
-        Vector3<T> out;
-        MulMat4AndVec3(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Vector3<T> operator*(Vector3<T> &&rhs) {
-        Vector3<T> out;
-        MulMat4AndVec3(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Vector4<T> operator*(Vector4<T> &rhs) {
-        Vector4<T> out;
-        MulMat4AndVec4(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-    Vector4<T> operator*(Vector4<T> &&rhs) {
-        Vector4<T> out;
-        MulMat4AndVec4(Ptr(), rhs.Ptr(), out.Ptr());
-        return out;
-    }
-
-    // division operators
-    template<typename V>
-    Matrix4<T> operator/(V scale) {
-        Matrix4<T> out;
-        DivMat4(Ptr(), out.Ptr(), scale, false);
-        return out;
-    }
-    template<typename V>
-    Matrix4<T> &operator/=(V scale) {
-        DivMat4(Ptr(), Ptr(), scale, false);
-        return *this;
-    }
-
-    S sub_vec_[4]; // 4x4
+    static_assert(N >= 1 && N <= 4, "dim should be 1~4");
 };
 
+// basic class type for all vector-N
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class VectorN {
+public:
+    static constexpr size_t kSize = N;
+
+    virtual inline T& operator [](int idx) = 0;
+    virtual inline T operator [](int idx) const = 0;
+    virtual T* GetPtr() = 0;
+    virtual const T* GetPtr() const = 0;
+
+    inline std::string ToString() const {
+        return VecorNToString<kSize>(GetPtr());
+    }
+    friend std::ostream& operator<<(std::ostream& os, const VectorN<N, T>& vec) {
+        os << vec.ToString();
+        return os;
+    }
+
+protected:
+    constexpr void _FillVectorN(T* vec, CONST_SCALE_TYPE scale) {
+        FillVectorN<kSize>(vec, scale);
+    }
+    constexpr void _AddVectorN(const T* lhs, const T* rhs, T* out) {
+        AddVectorN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _AddVectorN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+        AddVectorN<kSize>(in, out, scale);
+    }
+    constexpr void _SubVectorN(const T* lhs, const T* rhs, T* out) {
+        SubVectorN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _SubVectorN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+        SubVectorN<kSize>(in, out, scale, invert);
+    }
+    constexpr void _MulVectorN(const T* lhs, const T* rhs, T* out) {
+        MulVectorN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _MulVectorN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+        MulVectorN<kSize>(in, out, scale);
+    }
+    constexpr void _DivVectorN(const T* lhs, const T* rhs, T* out) {
+        DivVectorN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _DivVectorN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+        DivVectorN<kSize>(in, out, scale, invert);
+    }
+    constexpr void _CrossProductVectorN(const T* lhs, const T* rhs, T* out) {
+        CrossProductVectorN<kSize>(lhs, rhs, out);
+    }
+    constexpr T _InnerProductVectorN(const T* lhs, const T* rhs) {
+        return InnerProductVectorN<kSize>(lhs, rhs);
+    }
+    constexpr void _NormalizeVectorN(const T* in, T* out) {
+        NormalizeVectorN<kSize>(in, out);
+    }
+};
+
+#define VECTOR_N_FUNCTIONS \
+    virtual inline T& operator [](int idx) override { \
+        return data[idx]; \
+    } \
+    virtual inline T operator [](int idx) const override { \
+        return data[idx]; \
+    } \
+    virtual inline T* GetPtr() override { \
+        return data.data(); \
+    } \
+    virtual inline const T* GetPtr() const override { \
+        return data.data(); \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType operator+(V&& rhs) { \
+        _VectorType out; \
+        this->_AddVectorN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType operator+(S scale) { \
+        _VectorType out; \
+        this->_AddVectorN(GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_VectorType, V)>> \
+    friend _VectorType operator+(S scale, V&& rhs) { \
+        _VectorType out; \
+        rhs._AddVectorN(rhs.GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType& operator+=(V&& rhs) { \
+        this->_AddVectorN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType& operator+=(S scale) { \
+        this->_AddVectorN(GetPtr(), GetPtr(), scale); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType operator-(V&& rhs) { \
+        _VectorType out; \
+        this->_SubVectorN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType operator-(S scale) { \
+        _VectorType out; \
+        this->_SubVectorN(GetPtr(), out.GetPtr(), scale, false); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_VectorType, V)>> \
+    friend _VectorType operator-(S scale, V&& rhs) { \
+        _VectorType out; \
+        rhs._SubVectorN(rhs.GetPtr(), out.GetPtr(), scale, true); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType& operator-=(V&& rhs) { \
+        this->_SubVectorN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType& operator-=(S scale) { \
+        this->_SubVectorN(GetPtr(), GetPtr(), scale, false); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType operator*(V&& rhs) { \
+        _VectorType out; \
+        this->_MulVectorN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType operator*(S scale) { \
+        _VectorType out; \
+        this->_MulVectorN(GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_VectorType, V)>> \
+    friend _VectorType operator*(S scale, V&& rhs) { \
+        _VectorType out; \
+        rhs._MulVectorN(rhs.GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType& operator*=(V&& rhs) { \
+        this->_MulVectorN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType& operator*=(S scale) { \
+        this->_MulVectorN(GetPtr(), GetPtr(), scale); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType operator/(V&& rhs) { \
+        _VectorType out; \
+        this->_DivVectorN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType operator/(S scale) { \
+        _VectorType out; \
+        this->_DivVectorN(GetPtr(), out.GetPtr(), scale, false); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_VectorType, V)>> \
+    friend _VectorType operator/(S scale, V&& rhs) { \
+        _VectorType out; \
+        rhs._DivVectorN(rhs.GetPtr(), out.GetPtr(), scale, true); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    _VectorType& operator/=(V&& rhs) { \
+        this->_DivVectorN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _VectorType& operator/=(S scale) { \
+        this->_DivVectorN(GetPtr(), GetPtr(), scale, false); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    constexpr _VectorType CrossProduct(V&& rhs) { \
+        _VectorType out; \
+        this->_CrossProductVectorN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_VectorType, V)>> \
+    constexpr T InnerProduct(V&& rhs) { \
+        return this->_InnerProductVectorN(GetPtr(), rhs.GetPtr()); \
+    } \
+    constexpr _VectorType& Normalize() { \
+        this->_NormalizeVectorN(GetPtr(), GetPtr()); \
+        return *this; \
+    }
+
+// implement vector-3
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class Vector3 : public VectorN<3, T> {
+public:
+    using _VectorN = VectorN<3, T>;
+    using _VectorType = Vector3<T>;
+    using _VectorBuffer = VectorBuffer<_VectorN::kSize, T>;
+
+    constexpr Vector3() : x(0), y(0), z(0) {}
+    constexpr Vector3(T scale) : x(scale), y(scale), z(scale) {}
+    constexpr Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
+    constexpr Vector3(std::initializer_list<T> &list) : data(list) {}
+    constexpr Vector3(std::initializer_list<T> &&list) : data(list) {}
+
+    VECTOR_N_FUNCTIONS;
+
+    union {
+        struct { T x, y, z; };
+        _VectorBuffer data;
+    };
+};
+
+// implement vector-4
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class Vector4 : public VectorN<4, T> {
+public:
+    using _VectorN = VectorN<4, T>;
+    using _VectorType = Vector4<T>;
+    using _VectorBuffer = VectorBuffer<_VectorN::kSize, T>;
+
+    constexpr Vector4() : x(0), y(0), z(0), w(0) {}
+    constexpr Vector4(T scale) : x(scale), y(scale), z(scale), w(scale) {}
+    constexpr Vector4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+    constexpr Vector4(std::initializer_list<T> &list) : data(list) {}
+    constexpr Vector4(std::initializer_list<T> &&list) : data(list) {}
+
+    VECTOR_N_FUNCTIONS;
+
+    union {
+        struct { T x, y, z, w; };
+        _VectorBuffer data;
+    };
+};
+
+// matrix class type
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class MatrixBuffer : public ElementBuffer<N * N, T> {
+public:
+    MatrixBuffer() = default;
+    MatrixBuffer(T scale) { this->fill(scale); }
+    MatrixBuffer(std::initializer_list<T> &list) {
+        const int dim2 = std::min(N * N, list.size());
+        for (int i = 0; i < dim2; ++i) {
+            this->at(i) = *(std::begin(list) + i);
+        }
+    }
+
+    static_assert(N >= 1 && N <= 4, "dim should be 1~4");
+};
+
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class MatrixN {
+public:
+    static constexpr size_t kSize = N;
+
+    virtual inline VectorBuffer<N, T>& operator [](int idx) = 0;
+    virtual inline VectorBuffer<N, T> operator [](int idx) const = 0;
+    virtual T* GetPtr() = 0;
+    virtual const T* GetPtr() const = 0;
+
+    inline std::string ToString() const {
+        return MatrixNToString<kSize>(GetPtr());
+    }
+    friend std::ostream& operator<<(std::ostream& os, const MatrixN<N, T>& mat) {
+        os << mat.ToString();
+        return os;
+    }
+
+protected:
+    constexpr void _FillMatrixN(T* vec, CONST_SCALE_TYPE scale) {
+        FillMatrixN<kSize>(vec, scale);
+    }
+    constexpr void _FillDiagonalMatrixN(T* vec, CONST_SCALE_TYPE scale) {
+        FillDiagonalMatrixN<kSize>(vec, scale);
+    }
+    constexpr void _AddMatrixN(const T* lhs, const T* rhs, T* out) {
+        AddMatrixN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _AddMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+        AddMatrixN<kSize>(in, out, scale);
+    }
+    constexpr void _SubMatrixN(const T* lhs, const T* rhs, T* out) {
+        SubMatrixN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _SubMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+        SubMatrixN<kSize>(in, out, scale, invert);
+    }
+    constexpr void _MulMatrixN(const T* lhs, const T* rhs, T* out) {
+        MulMatrixN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _MulMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale) {
+        MulMatrixN<kSize>(in, out, scale);
+    }
+    constexpr void _DivMatrixN(const T* lhs, const T* rhs, T* out) {
+        DivMatrixN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _DivMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale, const bool invert) {
+        DivMatrixN<kSize>(in, out, scale, invert);
+    }
+    constexpr void _InvertMatrixN(const T* in, T* out) {
+        InvertMatrixN<kSize>(in, out);
+    }
+    constexpr void _ScaleMatrixN(const T* vec, T* mat) {
+        ScaleMatrixN<kSize>(vec, mat);
+    }
+};
+
+#define MATRIX_N_FUNCTIONS \
+    virtual inline _VectorBuffer& operator [](int idx) override { \
+        return mdata[idx]; \
+    } \
+    virtual inline _VectorBuffer operator [](int idx) const override { \
+        return mdata[idx]; \
+    } \
+    virtual inline T* GetPtr() override { \
+        return ldata.data(); \
+    } \
+    virtual inline const T* GetPtr() const override { \
+        return ldata.data(); \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType operator+(V&& rhs) { \
+        _MatrixType out; \
+        this->_AddMatrixN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType operator+(S scale) { \
+        _MatrixType out; \
+        this->_AddMatrixN(GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_MatrixType, V)>> \
+    friend _MatrixType operator+(S scale, V&& rhs) { \
+        _MatrixType out; \
+        rhs._AddMatrixN(rhs.GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType& operator+=(V&& rhs) { \
+        this->_AddMatrixN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType& operator+=(S scale) { \
+        this->_AddMatrixN(GetPtr(), GetPtr(), scale); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType operator-(V&& rhs) { \
+        _MatrixType out; \
+        this->_SubMatrixN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType operator-(S scale) { \
+        _MatrixType out; \
+        this->_SubMatrixN(GetPtr(), out.GetPtr(), scale, false); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_MatrixType, V)>> \
+    friend _MatrixType operator-(S scale, V&& rhs) { \
+        _MatrixType out; \
+        rhs._SubMatrixN(rhs.GetPtr(), out.GetPtr(), scale, true); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType& operator-=(V&& rhs) { \
+        this->_SubMatrixN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType& operator-=(S scale) { \
+        this->_SubMatrixN(GetPtr(), GetPtr(), scale, false); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType operator*(V&& rhs) { \
+        _MatrixType out; \
+        this->_MulMatrixN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType operator*(S scale) { \
+        _MatrixType out; \
+        this->_MulMatrixN(GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_MatrixType, V)>> \
+    friend _MatrixType operator*(S scale, V&& rhs) { \
+        _MatrixType out; \
+        rhs._MulMatrixN(rhs.GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType& operator*=(V&& rhs) { \
+        this->_MulMatrixN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType& operator*=(S scale) { \
+        this->_MulMatrixN(GetPtr(), GetPtr(), scale); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType operator/(V&& rhs) { \
+        _MatrixType out; \
+        this->_DivMatrixN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType operator/(S scale) { \
+        _MatrixType out; \
+        this->_DivMatrixN(GetPtr(), out.GetPtr(), scale, false); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_NUMBER(S) && IS_SAME(_MatrixType, V)>> \
+    friend _MatrixType operator/(S scale, V&& rhs) { \
+        _MatrixType out; \
+        rhs._DivMatrixN(rhs.GetPtr(), out.GetPtr(), scale, true); \
+        return out; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
+    _MatrixType& operator/=(V&& rhs) { \
+        this->_DivMatrixN(GetPtr(), rhs.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
+    _MatrixType& operator/=(S scale) { \
+        this->_DivMatrixN(GetPtr(), GetPtr(), scale, false); \
+        return *this; \
+    } \
+    constexpr _MatrixType& Invert() { \
+        _MatrixType buf = *this; \
+        this->_InvertMatrixN(buf.GetPtr(), GetPtr()); \
+        return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_BASE_OF(_OpVectorN, V)>> \
+    constexpr _MatrixType& Scale(V&& vec) { \
+        this->_ScaleMatrixN(vec.GetPtr(), GetPtr()); \
+        return *this; \
+    }
+
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class Matrix3 : public MatrixN<3, T> {
+public:
+    using _MatrixN = MatrixN<3, T>;
+    using _MatrixType = Matrix3<T>;
+    using _MatrixBuffer = MatrixBuffer<_MatrixN::kSize, T>;
+    using _VectorBuffer = VectorBuffer<_MatrixN::kSize, T>;
+    using _OpVectorN = VectorN<_MatrixN::kSize-1, T>;
+
+    constexpr Matrix3() : ldata(0) {}
+    constexpr Matrix3(T scale) : ldata(0) { this->_FillDiagonalMatrixN(GetPtr(), scale); }
+    constexpr Matrix3(std::initializer_list<T>& list) : ldata(list) {}
+    constexpr Matrix3(std::initializer_list<T>&& list) : ldata(list) {}
+
+    MATRIX_N_FUNCTIONS;
+
+    union {
+        std::array<_VectorBuffer, _MatrixN::kSize> mdata;
+        _MatrixBuffer ldata;
+    };
+};
+
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class Matrix4 : public MatrixN<4, T> {
+public:
+    using _MatrixN = MatrixN<4, T>;
+    using _MatrixType = Matrix4<T>;
+    using _MatrixBuffer = MatrixBuffer<_MatrixN::kSize, T>;
+    using _VectorBuffer = VectorBuffer<_MatrixN::kSize, T>;
+    using _OpVectorN = VectorN<_MatrixN::kSize-1, T>;
+
+    constexpr Matrix4() : ldata(0) {}
+    constexpr Matrix4(T scale) : ldata(0) { this->_FillDiagonalMatrixN(GetPtr(), scale); }
+    constexpr Matrix4(std::initializer_list<T>& list) : ldata(list) {}
+    constexpr Matrix4(std::initializer_list<T>&& list) : ldata(list) {}
+
+    MATRIX_N_FUNCTIONS;
+
+    union {
+        std::array<_VectorBuffer, _MatrixN::kSize> mdata;
+        _MatrixBuffer ldata;
+    };
+
+    template<typename V, typename = std::enable_if_t<IS_SAME(Vector3<T>, V)>>
+    static constexpr _MatrixType GetTranslation(V&& vec) {
+        _MatrixType out;
+        TranslationMatrix4(vec.GetPtr(), out.GetPtr());
+        return out;
+    }
+    static constexpr _MatrixType GetRotation(const int axis,
+                                             CONST_SCALE_TYPE degree) {
+        _MatrixType out;
+        RotationMatrix4AtAxis(out.GetPtr(), axis, degree);
+        return out;
+    }
+    template<
+        typename V1, typename V2, typename V3,
+        typename = std::enable_if_t<
+            IS_SAME(Vector3<T>, V1) && IS_SAME(Vector3<T>, V2) && IS_SAME(Vector3<T>, V3)
+        >
+    >
+    static constexpr _MatrixType GetLookat(V1&& eye, V2&& center, V3&& up) {
+        _MatrixType out;
+        LookatMatrix4(eye.GetPtr(), center.GetPtr(),
+                      up.GetPtr(), out.GetPtr());
+        return out;
+    }
+    static constexpr _MatrixType GetPerspective(CONST_SCALE_TYPE fov,
+                                                CONST_SCALE_TYPE aspect,
+                                                CONST_SCALE_TYPE near,
+                                                CONST_SCALE_TYPE far) {
+        _MatrixType out;
+        PerspectiveMatrix4(out.GetPtr(), fov, aspect, near, far);
+        return out;
+    }
+};
+
+using Vector3i = Vector3<int>;
 using Vector3f = Vector3<float>;
 using Vector3d = Vector3<double>;
-
+using Vector4i = Vector4<int>;
 using Vector4f = Vector4<float>;
 using Vector4d = Vector4<double>;
-
+using Matrix3i = Matrix3<int>;
+using Matrix3f = Matrix3<float>;
+using Matrix3d = Matrix3<double>;
+using Matrix4i = Matrix4<int>;
 using Matrix4f = Matrix4<float>;
 using Matrix4d = Matrix4<double>;
 
-const Matrix4f kIdentity_f = Matrix4f(1);
-const Matrix4d kIdentity_d = Matrix4d(1);
-
-template<typename T>
-constexpr T* GetPtr(Vector3<T> &v) {
-    return v.Ptr();
-}
-template<typename T>
-constexpr T* GetPtr(Vector4<T> &v) {
-    return v.Ptr();
-}
-template<typename T>
-constexpr T* GetPtr(Matrix4<T> &m) {
-    return m.Ptr();
-}
-
-// The base matrix defines the type.
-
-template<
-    typename T,
-    typename V1,
-    typename V2,
-    typename V3,
-    typename = std::enable_if_t<
-                         (
-                              std::is_same<std::remove_reference_t<V1>, Vector3<float>>::value &&
-                              std::is_same<std::remove_reference_t<V2>, Vector3<float>>::value &&
-                              std::is_same<std::remove_reference_t<V3>, Vector3<float>>::value &&
-                              std::is_same<T, float>::value
-                         ) || (
-                              std::is_same<std::remove_reference_t<V2>, Vector3<double>>::value &&
-                              std::is_same<std::remove_reference_t<V3>, Vector3<double>>::value &&
-                              std::is_same<std::remove_reference_t<V1>, Vector3<double>>::value &&
-                              std::is_same<T, double>::value
-                         )
-                       >
->
-inline Matrix4<T> GetLookat(Matrix4<T> base,
-                                V1&& eye,
-                                V2&& center,
-                                V3&& up) {
-    LookatMat4(GetPtr(eye), GetPtr(center), GetPtr(up), GetPtr(base));
-    return base;
-}
-
-
-// The base matrix defines the type.
-template<typename T>
-inline Matrix4<T> GetPerspective(Matrix4<T> base,
-                                     CONST_SCALE_TYPE fov,
-                                     CONST_SCALE_TYPE aspect,
-                                     CONST_SCALE_TYPE near,
-                                     CONST_SCALE_TYPE far) {
-    PerspectiveMat4(fov, aspect, near, far, GetPtr(base));
-    return base;
-}
-
-// The base matrix defines the type.
-template<typename T>
-inline Matrix4<T> GetRotation(Matrix4<T> base,
-                                  const int axis,
-                                  CONST_SCALE_TYPE degree) {
-    RotationMat4AtAxis(GetPtr(base), axis, degree);
-    return base;
-}
-
-
-// The in matrix defines the type.
-template<
-    typename T,
-    typename = std::enable_if_t<
-                   std::is_same<std::remove_reference_t<T>, Matrix4<float>>::value ||
-                   std::is_same<std::remove_reference_t<T>, Matrix4<double>>::value
-               >
->
-inline std::remove_reference_t<T> Invert(T&& in) {
-    std::remove_reference_t<T> out;
-    InvertMat4(GetPtr(in), GetPtr(out));
-    return out;
-}
-
-// The base matrix defines the type.
-template<
-    typename T,
-    typename V,
-    typename = std::enable_if_t<
-                         (
-                              std::is_same<std::remove_reference_t<V>, Vector3<float>>::value &&
-                              std::is_same<T, float>::value
-                         ) || (
-                              std::is_same<std::remove_reference_t<V>, Vector3<double>>::value &&
-                              std::is_same<T, double>::value
-                         )
-                       >
->
-inline Matrix4<T> GetTranslation(Matrix4<T> base, V&& vec) {
-    TranslationMat4(GetPtr(vec), GetPtr(base));
-    return base;
-}
-
-#undef STATIC_ASSERT_TYPE
-
-#undef VEC3_DIM_SIZE
-#undef MAT4_DIM_SIZE
-
+#undef FOREACH_LOOP
+#undef FOREACH_LOOP_END
 #undef CONST_SCALE_TYPE
 #undef SCALE_TYPE
-
-#endif
+#undef IS_NUMBER
+#undef IS_SAME
+#undef IS_BASE_OF
+#undef VECTOR_N_FUNCTIONS
+#undef MATRIX_N_FUNCTIONS
