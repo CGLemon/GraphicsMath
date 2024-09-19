@@ -261,6 +261,32 @@ constexpr void MulMatrixN(const T* lhs, const T* rhs, T* out) {
     }
 }
 
+// The matrix-N and vector-N multiplication operation, [out mat] = [left mat] x [right vec].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void MulMatrixNVectorN(const T* lhs, const T* rhs, T* out) {
+    for (size_t i = 0; i < N; i++) {
+        // j=0
+        SCALE_TYPE buf = 0.0;
+        for (size_t k = 0; k < N; ++k) {
+            buf += lhs[i * N + k] * rhs[k];
+        }
+        out[i] = buf;
+    }
+}
+
+// The matrix-N and vector-N multiplication operation, [out mat] = [left vec] x [right mat].
+template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void MulVectorNMatrixN(const T* lhs, const T* rhs, T* out) {
+    // i=0
+    for (size_t j = 0; j < N; j++) {
+        SCALE_TYPE buf = 0.0;
+        for (size_t k = 0; k < N; ++k) {
+            buf += lhs[k] * rhs[k * N + j];
+        }
+        out[j] = buf;
+    }
+}
+
 // The matrix-N multiplication operation, [out mat] = [in mat] * scale.
 template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
 constexpr void MulMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale) {
@@ -575,9 +601,14 @@ public:
     static_assert(N >= 1 && N <= 4, "dim should be 1~4");
 };
 
+class NonTypeVectorN {};
+
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class TypeOnlyVectorN : public NonTypeVectorN {};
+
 // basic class type for all vector-N
 template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
-class VectorN {
+class VectorN : public TypeOnlyVectorN<T> {
 public:
     static constexpr size_t kSize = N;
 
@@ -771,6 +802,14 @@ protected:
     constexpr _VectorType& Normalize() { \
         this->_NormalizeVectorN(GetPtr(), GetPtr()); \
         return *this; \
+    } \
+    template<typename V, typename = std::enable_if_t<IS_BASE_OF(NonTypeVectorN, V)>> \
+    constexpr typename std::remove_reference<V>::type Cast(CONST_SCALE_TYPE val=0) const { \
+        typename std::remove_reference<V>::type out; \
+        FOREACH_LOOP(out.kSize) { \
+            out[i] = i < _VectorN::kSize ? (*this)[i] : val; \
+        } FOREACH_LOOP_END; \
+        return out; \
     }
 
 // implement vector-3
@@ -833,8 +872,13 @@ public:
     static_assert(N >= 1 && N <= 4, "dim should be 1~4");
 };
 
+class NonTypeMatrixN {};
+
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+class TypeOnlyMatrixN : public NonTypeMatrixN {};
+
 template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
-class MatrixN {
+class MatrixN : public TypeOnlyMatrixN<T> {
 public:
     static constexpr size_t kSize = N;
 
@@ -875,6 +919,12 @@ protected:
     }
     constexpr void _MulMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale) {
         MulMatrixN<kSize>(in, out, scale);
+    }
+    constexpr void _MulMatrixNVectorN(const T* lhs, const T* rhs, T* out) {
+        MulMatrixNVectorN<kSize>(lhs, rhs, out);
+    }
+    constexpr void _MulVectorNMatrixN(const T* lhs, const T* rhs, T* out) {
+        MulVectorNMatrixN<kSize>(lhs, rhs, out);
     }
     constexpr void _DivMatrixN(const T* lhs, const T* rhs, T* out) {
         DivMatrixN<kSize>(lhs, rhs, out);
@@ -965,6 +1015,12 @@ protected:
         this->_MulMatrixN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
         return out; \
     } \
+    template<typename V, typename = std::enable_if_t<IS_BASE_OF(_OpVectorN, V)>> \
+    typename std::remove_reference<V>::type operator*(V&& rhs) { \
+        typename std::remove_reference<V>::type out; \
+        this->_MulMatrixNVectorN(GetPtr(), rhs.GetPtr(), out.GetPtr()); \
+        return out; \
+    } \
     template<typename S, typename = std::enable_if_t<IS_NUMBER(S)>> \
     _MatrixType operator*(S scale) { \
         _MatrixType out; \
@@ -975,6 +1031,12 @@ protected:
     friend _MatrixType operator*(S scale, V&& rhs) { \
         _MatrixType out; \
         rhs._MulMatrixN(rhs.GetPtr(), out.GetPtr(), scale); \
+        return out; \
+    } \
+    template<typename S, typename V, typename = std::enable_if_t<IS_BASE_OF(_OpVectorN, S) && IS_SAME(_MatrixType, V)>> \
+    friend typename std::remove_reference<S>::type operator*(S&& lhs, V&& rhs) { \
+        typename std::remove_reference<S>::type out; \
+        rhs._MulVectorNMatrixN(lhs.GetPtr(), rhs.GetPtr(), out.GetPtr()); \
         return out; \
     } \
     template<typename V, typename = std::enable_if_t<IS_SAME(_MatrixType, V)>> \
@@ -1020,7 +1082,7 @@ protected:
         this->_InvertMatrixN(buf.GetPtr(), GetPtr()); \
         return *this; \
     } \
-    template<typename V, typename = std::enable_if_t<IS_BASE_OF(_OpVectorN, V)>> \
+    template<typename V, typename = std::enable_if_t<IS_BASE_OF(TypeOnlyVectorN<T>, V)>> \
     constexpr _MatrixType& Scale(V&& vec) { \
         this->_ScaleMatrixN(vec.GetPtr(), GetPtr()); \
         return *this; \
@@ -1033,7 +1095,7 @@ public:
     using _MatrixType = Matrix3<T>;
     using _MatrixBuffer = MatrixBuffer<_MatrixN::kSize, T>;
     using _VectorBuffer = VectorBuffer<_MatrixN::kSize, T>;
-    using _OpVectorN = VectorN<_MatrixN::kSize-1, T>;
+    using _OpVectorN = VectorN<_MatrixN::kSize, T>;
 
     constexpr Matrix3() : ldata(0) {}
     constexpr Matrix3(T scale) : ldata(0) { this->_FillDiagonalMatrixN(GetPtr(), scale); }
@@ -1055,7 +1117,7 @@ public:
     using _MatrixType = Matrix4<T>;
     using _MatrixBuffer = MatrixBuffer<_MatrixN::kSize, T>;
     using _VectorBuffer = VectorBuffer<_MatrixN::kSize, T>;
-    using _OpVectorN = VectorN<_MatrixN::kSize-1, T>;
+    using _OpVectorN = VectorN<_MatrixN::kSize, T>;
 
     constexpr Matrix4() : ldata(0) {}
     constexpr Matrix4(T scale) : ldata(0) { this->_FillDiagonalMatrixN(GetPtr(), scale); }

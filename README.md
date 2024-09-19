@@ -15,10 +15,9 @@ int main(int argc, char **argv) {
 
     a += Vector3f(7,8,9); // 和其它 Vector3 相加
 
-    std::cout << a.ToString() << std::endl; // 顯示 Vector3 的值
+    std::cout << a << std::endl; // 顯示 Vector3 的值
 
-
-    float *ptr = a.GetPtr(); // 獲得指針
+    auto b = a.Cast<Vector4d>(); // 傳換成 Vector4 ，並且是 double 型態
 
     return 0;
 }
@@ -30,7 +29,7 @@ int main(int argc, char **argv) {
 ```cpp
 int main(int argc, char **argv) {
 
-    // 宣告 float 的 Matrix4，對角線的
+    // 宣告 float 的 Matrix4，對角線數值為 8
     Matrix4f a(8);
 
     Matrix4f b = {
@@ -54,7 +53,6 @@ int main(int argc, char **argv) {
 int main(int argc, char **argv) {
 
     Matrix4f mat4(1);
-
 }
 ```
 
