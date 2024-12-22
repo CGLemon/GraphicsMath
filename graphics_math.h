@@ -308,10 +308,10 @@ constexpr void DivMatrixN(const T* in, T* out, CONST_SCALE_TYPE scale, const boo
     DivVectorN<N * N>(in, out, scale, invert);
 }
 
-// Scale the model matrix-N.
-template<size_t N, typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+// Scale model matrix-N.
+template<size_t N, typename T, typename = std::enable_if_t<N >= 1 && IS_NUMBER(T)>>
 constexpr void ScaleMatrixN(const T* vec, T* mat) {
-    FOREACH_LOOP(N-1) { mat[GetMatrixNIndex<4>(i)] *= vec[i]; } FOREACH_LOOP_END;
+    FOREACH_LOOP(N-1) { mat[GetMatrixNIndex<N>(i)] *= vec[i]; } FOREACH_LOOP_END;
 }
 
 // Invert operator function, only for matrix-4.
