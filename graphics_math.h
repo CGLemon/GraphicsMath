@@ -314,129 +314,14 @@ constexpr void ScaleMatrixN(const T* vec, T* mat) {
     FOREACH_LOOP(N-1) { mat[GetMatrixNIndex<N>(i)] *= vec[i]; } FOREACH_LOOP_END;
 }
 
-// Invert operator function, only for matrix-4.
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void InvertMatrix4(const T* mat4, T* inv4);
+
+// Invert operator function, only for matrix-N.
 template<size_t N, typename T, typename = std::enable_if_t<N == 4 && IS_NUMBER(T)>>
-constexpr void InvertMatrixN(const T* mat4, T* inv4) {
-    inv4[0] = mat4[5]  * mat4[10] * mat4[15] -
-              mat4[5]  * mat4[11] * mat4[14] -
-              mat4[9]  * mat4[6]  * mat4[15] +
-              mat4[9]  * mat4[7]  * mat4[14] +
-              mat4[13] * mat4[6]  * mat4[11] -
-              mat4[13] * mat4[7]  * mat4[10];
-
-    inv4[4] = -mat4[4]  * mat4[10] * mat4[15] +
-               mat4[4]  * mat4[11] * mat4[14] +
-               mat4[8]  * mat4[6]  * mat4[15] -
-               mat4[8]  * mat4[7]  * mat4[14] -
-               mat4[12] * mat4[6]  * mat4[11] +
-               mat4[12] * mat4[7]  * mat4[10];
-
-    inv4[8] = mat4[4]  * mat4[9]  * mat4[15] -
-              mat4[4]  * mat4[11] * mat4[13] -
-              mat4[8]  * mat4[5]  * mat4[15] +
-              mat4[8]  * mat4[7]  * mat4[13] +
-              mat4[12] * mat4[5]  * mat4[11] -
-              mat4[12] * mat4[7]  * mat4[9];
-
-    inv4[12] = -mat4[4]  * mat4[9]  * mat4[14] +
-                mat4[4]  * mat4[10] * mat4[13] +
-                mat4[8]  * mat4[5]  * mat4[14] -
-                mat4[8]  * mat4[6]  * mat4[13] -
-                mat4[12] * mat4[5]  * mat4[10] +
-                mat4[12] * mat4[6]  * mat4[9];
-
-    inv4[1] = -mat4[1]  * mat4[10] * mat4[15] +
-               mat4[1]  * mat4[11] * mat4[14] +
-               mat4[9]  * mat4[2]  * mat4[15] -
-               mat4[9]  * mat4[3]  * mat4[14] -
-               mat4[13] * mat4[2]  * mat4[11] +
-               mat4[13] * mat4[3]  * mat4[10];
-
-    inv4[5] = mat4[0]  * mat4[10] * mat4[15] -
-              mat4[0]  * mat4[11] * mat4[14] -
-              mat4[8]  * mat4[2]  * mat4[15] +
-              mat4[8]  * mat4[3]  * mat4[14] +
-              mat4[12] * mat4[2]  * mat4[11] -
-              mat4[12] * mat4[3]  * mat4[10];
-
-    inv4[9] = -mat4[0]  * mat4[9]  * mat4[15] +
-               mat4[0]  * mat4[11] * mat4[13] +
-               mat4[8]  * mat4[1]  * mat4[15] -
-               mat4[8]  * mat4[3]  * mat4[13] -
-               mat4[12] * mat4[1]  * mat4[11] +
-               mat4[12] * mat4[3]  * mat4[9];
-
-    inv4[13] = mat4[0]  * mat4[9]  * mat4[14] -
-               mat4[0]  * mat4[10] * mat4[13] -
-               mat4[8]  * mat4[1]  * mat4[14] +
-               mat4[8]  * mat4[2]  * mat4[13] +
-               mat4[12] * mat4[1]  * mat4[10] -
-               mat4[12] * mat4[2]  * mat4[9];
-
-    inv4[2] = mat4[1]  * mat4[6] * mat4[15] -
-              mat4[1]  * mat4[7] * mat4[14] -
-              mat4[5]  * mat4[2] * mat4[15] +
-              mat4[5]  * mat4[3] * mat4[14] +
-              mat4[13] * mat4[2] * mat4[7] -
-              mat4[13] * mat4[3] * mat4[6];
-
-    inv4[6] = -mat4[0]  * mat4[6] * mat4[15] +
-               mat4[0]  * mat4[7] * mat4[14] +
-               mat4[4]  * mat4[2] * mat4[15] -
-               mat4[4]  * mat4[3] * mat4[14] -
-               mat4[12] * mat4[2] * mat4[7] +
-               mat4[12] * mat4[3] * mat4[6];
-
-    inv4[10] = mat4[0]  * mat4[5] * mat4[15] -
-               mat4[0]  * mat4[7] * mat4[13] -
-               mat4[4]  * mat4[1] * mat4[15] +
-               mat4[4]  * mat4[3] * mat4[13] +
-               mat4[12] * mat4[1] * mat4[7] -
-               mat4[12] * mat4[3] * mat4[5];
-
-    inv4[14] = -mat4[0]  * mat4[5] * mat4[14] +
-                mat4[0]  * mat4[6] * mat4[13] +
-                mat4[4]  * mat4[1] * mat4[14] -
-                mat4[4]  * mat4[2] * mat4[13] -
-                mat4[12] * mat4[1] * mat4[6] +
-                mat4[12] * mat4[2] * mat4[5];
-
-    inv4[3] = -mat4[1] * mat4[6] * mat4[11] +
-               mat4[1] * mat4[7] * mat4[10] +
-               mat4[5] * mat4[2] * mat4[11] -
-               mat4[5] * mat4[3] * mat4[10] -
-               mat4[9] * mat4[2] * mat4[7] +
-               mat4[9] * mat4[3] * mat4[6];
-
-    inv4[7] = mat4[0] * mat4[6] * mat4[11] -
-              mat4[0] * mat4[7] * mat4[10] -
-              mat4[4] * mat4[2] * mat4[11] +
-              mat4[4] * mat4[3] * mat4[10] +
-              mat4[8] * mat4[2] * mat4[7] -
-              mat4[8] * mat4[3] * mat4[6];
-
-    inv4[11] = -mat4[0] * mat4[5] * mat4[11] +
-                mat4[0] * mat4[7] * mat4[9] +
-                mat4[4] * mat4[1] * mat4[11] -
-                mat4[4] * mat4[3] * mat4[9] -
-                mat4[8] * mat4[1] * mat4[7] +
-                mat4[8] * mat4[3] * mat4[5];
-
-    inv4[15] = mat4[0] * mat4[5] * mat4[10] -
-               mat4[0] * mat4[6] * mat4[9] -
-               mat4[4] * mat4[1] * mat4[10] +
-               mat4[4] * mat4[2] * mat4[9] +
-               mat4[8] * mat4[1] * mat4[6] -
-               mat4[8] * mat4[2] * mat4[5];
-
-    SCALE_TYPE det = mat4[0] * inv4[0] +
-                         mat4[1] * inv4[4] +
-                         mat4[2] * inv4[8] +
-                         mat4[3] * inv4[12];
-    det = 1.0 / det;
-
-    for (int i = 0; i < 16; i++) {
-        inv4[i] *= det;
+constexpr void InvertMatrixN(const T* mat, T* inv) {
+    if (N == 4) {
+        InvertMatrix4<T>(mat, inv);
     }
 }
 
@@ -572,6 +457,131 @@ constexpr void PerspectiveMatrix4(T* mat4,
 
     mat4[GetMatrixNIndex<4>(kAxisZ, kAxisW)] = -1.0;
     mat4[GetMatrixNIndex<4>(kAxisW, kAxisZ)] = (2*far*near)/diff;
+}
+
+template<typename T, typename = std::enable_if_t<IS_NUMBER(T)>>
+constexpr void InvertMatrix4(const T* mat4, T* inv4) {
+    inv4[0] = mat4[5]  * mat4[10] * mat4[15] -
+              mat4[5]  * mat4[11] * mat4[14] -
+              mat4[9]  * mat4[6]  * mat4[15] +
+              mat4[9]  * mat4[7]  * mat4[14] +
+              mat4[13] * mat4[6]  * mat4[11] -
+              mat4[13] * mat4[7]  * mat4[10];
+
+    inv4[4] = -mat4[4]  * mat4[10] * mat4[15] +
+               mat4[4]  * mat4[11] * mat4[14] +
+               mat4[8]  * mat4[6]  * mat4[15] -
+               mat4[8]  * mat4[7]  * mat4[14] -
+               mat4[12] * mat4[6]  * mat4[11] +
+               mat4[12] * mat4[7]  * mat4[10];
+
+    inv4[8] = mat4[4]  * mat4[9]  * mat4[15] -
+              mat4[4]  * mat4[11] * mat4[13] -
+              mat4[8]  * mat4[5]  * mat4[15] +
+              mat4[8]  * mat4[7]  * mat4[13] +
+              mat4[12] * mat4[5]  * mat4[11] -
+              mat4[12] * mat4[7]  * mat4[9];
+
+    inv4[12] = -mat4[4]  * mat4[9]  * mat4[14] +
+                mat4[4]  * mat4[10] * mat4[13] +
+                mat4[8]  * mat4[5]  * mat4[14] -
+                mat4[8]  * mat4[6]  * mat4[13] -
+                mat4[12] * mat4[5]  * mat4[10] +
+                mat4[12] * mat4[6]  * mat4[9];
+
+    inv4[1] = -mat4[1]  * mat4[10] * mat4[15] +
+               mat4[1]  * mat4[11] * mat4[14] +
+               mat4[9]  * mat4[2]  * mat4[15] -
+               mat4[9]  * mat4[3]  * mat4[14] -
+               mat4[13] * mat4[2]  * mat4[11] +
+               mat4[13] * mat4[3]  * mat4[10];
+
+    inv4[5] = mat4[0]  * mat4[10] * mat4[15] -
+              mat4[0]  * mat4[11] * mat4[14] -
+              mat4[8]  * mat4[2]  * mat4[15] +
+              mat4[8]  * mat4[3]  * mat4[14] +
+              mat4[12] * mat4[2]  * mat4[11] -
+              mat4[12] * mat4[3]  * mat4[10];
+
+    inv4[9] = -mat4[0]  * mat4[9]  * mat4[15] +
+               mat4[0]  * mat4[11] * mat4[13] +
+               mat4[8]  * mat4[1]  * mat4[15] -
+               mat4[8]  * mat4[3]  * mat4[13] -
+               mat4[12] * mat4[1]  * mat4[11] +
+               mat4[12] * mat4[3]  * mat4[9];
+
+    inv4[13] = mat4[0]  * mat4[9]  * mat4[14] -
+               mat4[0]  * mat4[10] * mat4[13] -
+               mat4[8]  * mat4[1]  * mat4[14] +
+               mat4[8]  * mat4[2]  * mat4[13] +
+               mat4[12] * mat4[1]  * mat4[10] -
+               mat4[12] * mat4[2]  * mat4[9];
+
+    inv4[2] = mat4[1]  * mat4[6] * mat4[15] -
+              mat4[1]  * mat4[7] * mat4[14] -
+              mat4[5]  * mat4[2] * mat4[15] +
+              mat4[5]  * mat4[3] * mat4[14] +
+              mat4[13] * mat4[2] * mat4[7] -
+              mat4[13] * mat4[3] * mat4[6];
+
+    inv4[6] = -mat4[0]  * mat4[6] * mat4[15] +
+               mat4[0]  * mat4[7] * mat4[14] +
+               mat4[4]  * mat4[2] * mat4[15] -
+               mat4[4]  * mat4[3] * mat4[14] -
+               mat4[12] * mat4[2] * mat4[7] +
+               mat4[12] * mat4[3] * mat4[6];
+
+    inv4[10] = mat4[0]  * mat4[5] * mat4[15] -
+               mat4[0]  * mat4[7] * mat4[13] -
+               mat4[4]  * mat4[1] * mat4[15] +
+               mat4[4]  * mat4[3] * mat4[13] +
+               mat4[12] * mat4[1] * mat4[7] -
+               mat4[12] * mat4[3] * mat4[5];
+
+    inv4[14] = -mat4[0]  * mat4[5] * mat4[14] +
+                mat4[0]  * mat4[6] * mat4[13] +
+                mat4[4]  * mat4[1] * mat4[14] -
+                mat4[4]  * mat4[2] * mat4[13] -
+                mat4[12] * mat4[1] * mat4[6] +
+                mat4[12] * mat4[2] * mat4[5];
+
+    inv4[3] = -mat4[1] * mat4[6] * mat4[11] +
+               mat4[1] * mat4[7] * mat4[10] +
+               mat4[5] * mat4[2] * mat4[11] -
+               mat4[5] * mat4[3] * mat4[10] -
+               mat4[9] * mat4[2] * mat4[7] +
+               mat4[9] * mat4[3] * mat4[6];
+
+    inv4[7] = mat4[0] * mat4[6] * mat4[11] -
+              mat4[0] * mat4[7] * mat4[10] -
+              mat4[4] * mat4[2] * mat4[11] +
+              mat4[4] * mat4[3] * mat4[10] +
+              mat4[8] * mat4[2] * mat4[7] -
+              mat4[8] * mat4[3] * mat4[6];
+
+    inv4[11] = -mat4[0] * mat4[5] * mat4[11] +
+                mat4[0] * mat4[7] * mat4[9] +
+                mat4[4] * mat4[1] * mat4[11] -
+                mat4[4] * mat4[3] * mat4[9] -
+                mat4[8] * mat4[1] * mat4[7] +
+                mat4[8] * mat4[3] * mat4[5];
+
+    inv4[15] = mat4[0] * mat4[5] * mat4[10] -
+               mat4[0] * mat4[6] * mat4[9] -
+               mat4[4] * mat4[1] * mat4[10] +
+               mat4[4] * mat4[2] * mat4[9] +
+               mat4[8] * mat4[1] * mat4[6] -
+               mat4[8] * mat4[2] * mat4[5];
+
+    SCALE_TYPE det = mat4[0] * inv4[0] +
+                         mat4[1] * inv4[4] +
+                         mat4[2] * inv4[8] +
+                         mat4[3] * inv4[12];
+    det = 1.0 / det;
+
+    for (int i = 0; i < 16; i++) {
+        inv4[i] *= det;
+    }
 }
 
 // basic buffer type
